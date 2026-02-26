@@ -92,3 +92,10 @@ curl -s http://p8g00kog08ksoo8sksok4ssw:3000/api/health   # Recorder 15min
 - Never change `DRY_RUN` from `true` to `false` without explicit user approval.
 - Always check for open trades before restarting runtime services.
 - The live environment is currently empty -- do not create services there without approval.
+
+## Rendering Rules
+
+- Prefer markdown tables over bullet dumps for status answers.
+- Keep headers stable: `Service | UUID | Status | Health`.
+- Trim UUID display to full value in monospace, but avoid extra prose around each row.
+- If one call fails, still return partial table with `n/a` in missing fields.

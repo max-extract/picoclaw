@@ -18,6 +18,37 @@ Three runtime instances run the "EMA Until Expiry" strategy on different markets
 | BTC 15-minute | `http://hkcowc8080w80kgoss8k40ss:3000` |
 | ETH 15-minute | `http://g0o4ccw00c4gskog44o8g08w:3000` |
 
+## Cross Arb Monitor (Strategy 5)
+
+Cross Arb has a separate monitor service:
+
+| Service | Internal Base URL |
+|---|---|
+| Cross Arb Monitor | `http://c4c08gokgcggs08soo4088os:3000` |
+
+### Cross Arb Endpoints
+
+```sh
+curl -s http://c4c08gokgcggs08soo4088os:3000/api/health
+curl -s http://c4c08gokgcggs08soo4088os:3000/api/state/all
+curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=btc"
+curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=eth"
+```
+
+### ROI Query (Cross Arb)
+
+Use `api/ui/state` and read:
+- `baseState.performance.roi`
+- `baseState.performance.totalPnl`
+- `baseState.performance.trades`
+- `baseState.performance.winRate`
+
+Example:
+
+```sh
+curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=btc" | jq '{roi: .baseState.performance.roi, totalPnl: .baseState.performance.totalPnl, trades: .baseState.performance.trades, winRate: .baseState.performance.winRate}'
+```
+
 ### Key Endpoints
 
 **Full dashboard state** (positions, trades, performance, market data):
@@ -111,3 +142,14 @@ curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/data-footprint
 - The `recentTrades` array shows the last trades with entry/exit prices and PnL.
 - All runtimes are in paper mode (`DRY_RUN=true`), so trades are simulated.
 - Replace the hostname UUID in the URLs above to query different instances.
+- For Cross Arb ROI, do not use DB assumptions; always query `/api/ui/state`.
+
+## Response Formatting Rules
+
+When presenting service data:
+
+- Use compact markdown tables with exactly these columns when possible:
+  - `Service | Status | Key Metrics | Notes`
+- Keep values short (one line per row), round numeric metrics to 2 decimals.
+- If a metric is unavailable, use `n/a` instead of long explanations.
+- After the table, add a short `Next action:` line if any service is unhealthy.
