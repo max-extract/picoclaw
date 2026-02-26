@@ -2,9 +2,13 @@
 .gitignore
 build/
 .picoclaw/
-config/
+config/config.json
+config/config.example.json
 .env
 .env.example
-*.md
 LICENSE
 assets/
+docs/
+README*.md
+CHANGELOG*.md
+CONTRIBUTING*.md
