@@ -3,9 +3,4 @@ services:
   picoclaw-gateway:
     volumes:
       - ./config/config.coolify.json:/tmp/config_src.json:ro
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        cp /tmp/config_src.json /home/picoclaw/.picoclaw/config.json
-        sed -i "s|__OPENROUTER_KEY__|$${PICOCLAW_PROVIDERS_OPENROUTER_API_KEY}|g" /home/picoclaw/.picoclaw/config.json
-        exec picoclaw gateway
+    command: ["sh", "-c", "cp /tmp/config_src.json /home/picoclaw/.picoclaw/config.json && sed -i 's|__OPENROUTER_KEY__|'\"$${PICOCLAW_PROVIDERS_OPENROUTER_API_KEY}\"'|g' /home/picoclaw/.picoclaw/config.json && exec picoclaw gateway"]
