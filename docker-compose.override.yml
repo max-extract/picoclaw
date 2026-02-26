@@ -1,6 +1,6 @@
-# Coolify deployment: config.coolify.json + inject API key from env at startup
+# Coolify: use config.coolify.json, API key from PICOCLAW_PROVIDERS_OPENROUTER_API_KEY env
 services:
   picoclaw-gateway:
     volumes:
-      - ./config/config.coolify.json:/tmp/config_src.json:ro
-    command: ["sh", "-c", "cp /tmp/config_src.json /home/picoclaw/.picoclaw/config.json && sed -i 's|__OPENROUTER_KEY__|'\"$${PICOCLAW_PROVIDERS_OPENROUTER_API_KEY}\"'|g' /home/picoclaw/.picoclaw/config.json && exec picoclaw gateway"]
+      - ./config/config.coolify.json:/home/picoclaw/.picoclaw/config.json:ro
+      - picoclaw-workspace:/home/picoclaw/.picoclaw/workspace

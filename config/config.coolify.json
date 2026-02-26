@@ -3,20 +3,19 @@
     "defaults": {
       "workspace": "~/.picoclaw/workspace",
       "restrict_to_workspace": true,
-      "model": "sonnet4",
+      "model": "openrouter",
       "max_tokens": 8192,
       "temperature": 0.7,
       "max_tool_iterations": 20
     }
   },
-  "model_list": [
-    {
-      "model_name": "sonnet4",
-      "model": "openrouter/anthropic/claude-sonnet-4",
-      "api_key": "__OPENROUTER_KEY__",
+  "model_list": [],
+  "providers": {
+    "openrouter": {
+      "api_key": "",
       "api_base": "https://openrouter.ai/api/v1"
     }
-  ],
+  },
   "tools": {
     "web": {
       "duckduckgo": { "enabled": true, "max_results": 5 },
