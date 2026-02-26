@@ -1,21 +1,12 @@
-# Long-term Memory
+# Memory
 
-This file stores important information that should persist across sessions.
+## Stable Facts
 
-## User Information
+- Primary environment for current work: `pico` (PicoClaw service) plus `paper` services.
+- Read-only API diagnostics are preferred.
+- Public fallback URLs are required when internal Docker hostnames are unreachable.
 
-(Important facts about user)
+## Known Constraints
 
-## Preferences
-
-(User preferences learned over time)
-
-## Important Notes
-
-(Things to remember)
-
-## Configuration
-
-- Model preferences
-- Channel settings
-- Skills enabled
+- Cross Arb public endpoint may return 404 depending on Coolify routing.
+- Coolify deployment logs for failed builds can sometimes be unavailable.

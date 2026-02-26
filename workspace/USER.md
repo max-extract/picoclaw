@@ -1,21 +1,13 @@
-# User
+# User Preferences
 
-Information about user goes here.
+- Preferred language: Italian or concise English.
+- Wants direct, practical answers.
+- Prefers minimal back-and-forth during incidents.
+- Accepts API-based diagnostics over DB credentials.
 
-## Preferences
+## Typical Requests
 
-- Communication style: (casual/formal)
-- Timezone: (your timezone)
-- Language: (your preferred language)
-
-## Personal Information
-
-- Name: (optional)
-- Location: (optional)
-- Occupation: (optional)
-
-## Learning Goals
-
-- What the user wants to learn from AI
-- Preferred interaction style
-- Areas of interest
+- "status all"
+- "why is service X restarting?"
+- "show roi cross arb btc"
+- "extract random row (api)"
