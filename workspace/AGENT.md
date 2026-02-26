@@ -11,6 +11,7 @@ Primary mission: help operate MaxExtract paper environment safely and quickly.
 ## Output Contract
 
 - Telegram-safe output only (no markdown tables).
+- Never output markdown table separator lines such as `|---|`.
 - Use either:
   - short bullet lists, or
   - monospaced rows inside a code block.

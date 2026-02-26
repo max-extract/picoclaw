@@ -31,19 +31,15 @@ curl -s "${MAXEXTRACT_RECORDER_5M_URL}/api/stats"
 
 Three runtime instances run the "EMA Until Expiry" strategy on different markets:
 
-| Instance | Internal Base URL |
-|---|---|
-| BTC 5-minute | `http://ess8wcoo0cc8gwc8s8osc84g:3000` |
-| BTC 15-minute | `http://hkcowc8080w80kgoss8k40ss:3000` |
-| ETH 15-minute | `http://g0o4ccw00c4gskog44o8g08w:3000` |
+- BTC 5-minute: `http://ess8wcoo0cc8gwc8s8osc84g:3000`
+- BTC 15-minute: `http://hkcowc8080w80kgoss8k40ss:3000`
+- ETH 15-minute: `http://g0o4ccw00c4gskog44o8g08w:3000`
 
 ## Cross Arb Monitor (Strategy 5)
 
 Cross Arb has a separate monitor service:
 
-| Service | Internal Base URL |
-|---|---|
-| Cross Arb Monitor | `http://c4c08gokgcggs08soo4088os:3000` |
+- Cross Arb Monitor: `http://c4c08gokgcggs08soo4088os:3000`
 
 ### Cross Arb Endpoints
 
@@ -130,10 +126,8 @@ curl -s -X POST http://ess8wcoo0cc8gwc8s8osc84g:3000/api/reset-all
 
 Two recorders capture orderbook snapshots at different intervals:
 
-| Recorder | Internal Base URL |
-|---|---|
-| 5-minute | `http://vwg4o4cw4wg8ckwk88ks0408:3000` |
-| 15-minute | `http://p8g00kog08ksoo8sksok4ssw:3000` |
+- Recorder 5-minute: `http://vwg4o4cw4wg8ckwk88ks0408:3000`
+- Recorder 15-minute: `http://p8g00kog08ksoo8sksok4ssw:3000`
 
 ### Key Endpoints
 
@@ -176,6 +170,7 @@ curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/data-footprint
 When presenting service data:
 
 - Telegram-safe rendering only: avoid markdown pipe tables.
+- Never output markdown table separators like `|---|`.
 - Use either bullets or monospaced rows in code block.
 - Row format:
   - `SERVICE | STATUS | KEY_METRICS | NOTES`

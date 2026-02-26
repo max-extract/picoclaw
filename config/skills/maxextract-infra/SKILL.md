@@ -20,15 +20,13 @@ The token and URL are available as environment variables `COOLIFY_API_TOKEN` and
 
 ## Service Registry
 
-| Service | UUID | Type | Internal Hostname |
-|---|---|---|---|
-| DB - Paper | `zkk4wok8k08s440ggk4sso08` | PostgreSQL + TimescaleDB | `zkk4wok8k08s440ggk4sso08:5432` |
-| Ema until expiry - BTC 5m | `ess8wcoo0cc8gwc8s8osc84g` | Runtime (trading bot) | `ess8wcoo0cc8gwc8s8osc84g:3000` |
-| Ema until expiry - BTC 15m | `hkcowc8080w80kgoss8k40ss` | Runtime (trading bot) | `hkcowc8080w80kgoss8k40ss:3000` |
-| Ema until expiry - ETH 15m | `g0o4ccw00c4gskog44o8g08w` | Runtime (trading bot) | `g0o4ccw00c4gskog44o8g08w:3000` |
-| Recorder 5min | `vwg4o4cw4wg8ckwk88ks0408` | Orderbook recorder | `vwg4o4cw4wg8ckwk88ks0408:3000` |
-| Recorder 15min | `p8g00kog08ksoo8sksok4ssw` | Orderbook recorder | `p8g00kog08ksoo8sksok4ssw:3000` |
-| Cross Arb Monitor | `c4c08gokgcggs08soo4088os` | Strategy 5 monitor | `c4c08gokgcggs08soo4088os:3000` |
+- DB - Paper: UUID `zkk4wok8k08s440ggk4sso08`, type PostgreSQL + TimescaleDB, host `zkk4wok8k08s440ggk4sso08:5432`
+- EMA until expiry - BTC 5m: UUID `ess8wcoo0cc8gwc8s8osc84g`, type runtime, host `ess8wcoo0cc8gwc8s8osc84g:3000`
+- EMA until expiry - BTC 15m: UUID `hkcowc8080w80kgoss8k40ss`, type runtime, host `hkcowc8080w80kgoss8k40ss:3000`
+- EMA until expiry - ETH 15m: UUID `g0o4ccw00c4gskog44o8g08w`, type runtime, host `g0o4ccw00c4gskog44o8g08w:3000`
+- Recorder 5min: UUID `vwg4o4cw4wg8ckwk88ks0408`, type recorder, host `vwg4o4cw4wg8ckwk88ks0408:3000`
+- Recorder 15min: UUID `p8g00kog08ksoo8sksok4ssw`, type recorder, host `p8g00kog08ksoo8sksok4ssw:3000`
+- Cross Arb Monitor: UUID `c4c08gokgcggs08soo4088os`, type strategy monitor, host `c4c08gokgcggs08soo4088os:3000`
 
 Important: treat this table as baseline only. For current/accurate services, always query Coolify API live.
 
@@ -108,6 +106,7 @@ curl -s http://p8g00kog08ksoo8sksok4ssw:3000/api/health   # Recorder 15min
 ## Rendering Rules
 
 - Telegram-safe rendering: do not use markdown pipe tables.
+- Never output markdown table separators like `|---|`.
 - Use bullets or a code block with monospaced rows:
   - `SERVICE | UUID | STATUS | HEALTH`
 - Add one-line summary before rows: `Summary: Healthy X/Y, Degraded Z, Unreachable W`.
