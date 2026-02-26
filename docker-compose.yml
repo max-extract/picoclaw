@@ -35,6 +35,28 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        set -eu
+        require_env() {
+          key="$1"
+          eval "value=\${$key:-}"
+          if [ -z "$value" ]; then
+            echo "FATAL: missing required env var: $key" >&2
+            exit 1
+          fi
+        }
+
+        require_env PICOCLAW_PROVIDERS_OPENROUTER_API_KEY
+        require_env PICOCLAW_CHANNELS_TELEGRAM_TOKEN
+        require_env COOLIFY_API_URL
+        require_env COOLIFY_API_TOKEN
+
+        for optional_key in MAXEXTRACT_RUNTIME_BTC5M_URL MAXEXTRACT_RUNTIME_BTC15M_URL MAXEXTRACT_RUNTIME_ETH15M_URL MAXEXTRACT_RECORDER_5M_URL MAXEXTRACT_RECORDER_15M_URL MAXEXTRACT_CROSS_ARB_URL; do
+          eval "optional_value=\${$optional_key:-}"
+          if [ -z "$optional_value" ]; then
+            echo "WARN: optional env var not set: $optional_key" >&2
+          fi
+        done
+
         MN="$${PICOCLAW_AGENTS_DEFAULTS_MODEL:-openrouter-auto}"
         cat > /home/picoclaw/.picoclaw/config.json << CFGEOF
         {"agents":{"defaults":{"workspace":"~/.picoclaw/workspace","restrict_to_workspace":false,"model":"$${MN}","max_tokens":8192,"temperature":0.7,"max_tool_iterations":20}},"model_list":[{"model_name":"$${MN}","model":"openrouter/minimax/minimax-m2.5","api_key":"$${PICOCLAW_PROVIDERS_OPENROUTER_API_KEY}","api_base":"https://openrouter.ai/api/v1"}],"tools":{"web":{"duckduckgo":{"enabled":true,"max_results":5},"brave":{"enabled":false},"tavily":{"enabled":false}},"exec":{"deny_patterns":[]}},"heartbeat":{"enabled":true,"interval":60},"gateway":{"host":"0.0.0.0","port":18790}}

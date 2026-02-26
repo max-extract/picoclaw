@@ -175,8 +175,11 @@ curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/data-footprint
 
 When presenting service data:
 
-- Use compact markdown tables with exactly these columns when possible:
+- Always use compact markdown tables for operational answers.
+- Use exactly these columns:
   - `Service | Status | Key Metrics | Notes`
+- Add one-line summary before table:
+  - `Summary: Healthy X/Y, Degraded Z, Unreachable W`
 - Keep values short (one line per row), round numeric metrics to 2 decimals.
 - If a metric is unavailable, use `n/a` instead of long explanations.
 - After the table, add a short `Next action:` line if any service is unhealthy.

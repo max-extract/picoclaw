@@ -95,7 +95,9 @@ curl -s http://p8g00kog08ksoo8sksok4ssw:3000/api/health   # Recorder 15min
 
 ## Rendering Rules
 
-- Prefer markdown tables over bullet dumps for status answers.
-- Keep headers stable: `Service | UUID | Status | Health`.
-- Trim UUID display to full value in monospace, but avoid extra prose around each row.
-- If one call fails, still return partial table with `n/a` in missing fields.
+- Always return service status answers as markdown table (not bullets) unless explicitly asked otherwise.
+- Keep headers exactly: `Service | UUID | Status | Health`.
+- Add a one-line summary before the table: `Summary: Healthy X/Y, Degraded Z, Unreachable W`.
+- Keep UUIDs in monospace and avoid extra prose per-row.
+- If one call fails, still return a partial table with `n/a` in missing fields.
+- Add a final `Next action:` line when any row is not healthy.
