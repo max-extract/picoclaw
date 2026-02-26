@@ -8,6 +8,25 @@ description: Query runtime and recorder APIs for market state, trades, PnL, and 
 You can query the MaxExtract trading bot runtime services and orderbook recorders
 over the internal Docker network. No authentication is needed for these endpoints.
 
+## Connectivity Fallback (Important)
+
+If internal UUID hostnames fail with `curl` exit code 6, use the public base URLs
+provided via environment variables:
+
+- `MAXEXTRACT_RUNTIME_BTC5M_URL`
+- `MAXEXTRACT_RUNTIME_BTC15M_URL`
+- `MAXEXTRACT_RUNTIME_ETH15M_URL`
+- `MAXEXTRACT_RECORDER_5M_URL`
+- `MAXEXTRACT_RECORDER_15M_URL`
+- `MAXEXTRACT_CROSS_ARB_URL`
+
+Example fallback:
+
+```sh
+curl -s "${MAXEXTRACT_RUNTIME_BTC5M_URL}/api/state"
+curl -s "${MAXEXTRACT_RECORDER_5M_URL}/api/stats"
+```
+
 ## Runtime Services (Trading Bots)
 
 Three runtime instances run the "EMA Until Expiry" strategy on different markets:
@@ -48,6 +67,14 @@ Example:
 ```sh
 curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=btc" | jq '{roi: .baseState.performance.roi, totalPnl: .baseState.performance.totalPnl, trades: .baseState.performance.trades, winRate: .baseState.performance.winRate}'
 ```
+
+Public fallback:
+
+```sh
+curl -s "${MAXEXTRACT_CROSS_ARB_URL}/api/ui/state?symbol=btc" | jq '{roi: .baseState.performance.roi, totalPnl: .baseState.performance.totalPnl, trades: .baseState.performance.trades, winRate: .baseState.performance.winRate}'
+```
+
+If the endpoint returns `404 page not found`, report that Cross Arb API is not exposed publicly and suggest checking Coolify routing/port for that service.
 
 ### Key Endpoints
 
