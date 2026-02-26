@@ -1,3 +1,8 @@
+---
+name: trading-dashboard
+description: Query runtime and recorder APIs for market state, trades, PnL, and service health.
+---
+
 # MaxExtract Trading Dashboard
 
 You can query the MaxExtract trading bot runtime services and orderbook recorders

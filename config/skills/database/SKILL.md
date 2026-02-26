@@ -1,3 +1,8 @@
+---
+name: database
+description: Access MaxExtract data via runtime and recorder APIs without direct database credentials.
+---
+
 # MaxExtract Data Access (API-Only)
 
 Use runtime and recorder HTTP APIs for trading data and metrics.

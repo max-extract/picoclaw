@@ -1,3 +1,8 @@
+---
+name: maxextract-infra
+description: Manage MaxExtract services through Coolify API and internal network endpoints.
+---
+
 # MaxExtract Infrastructure Management
 
 You have access to the MaxExtract trading infrastructure via the Coolify deployment platform.
