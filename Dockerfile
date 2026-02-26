@@ -20,7 +20,7 @@ RUN make build
 # ============================================================
 FROM alpine:3.23
 
-RUN apk add --no-cache ca-certificates tzdata curl
+RUN apk add --no-cache ca-certificates tzdata curl postgresql-client jq
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
@@ -28,6 +28,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Copy binary
 COPY --from=builder /src/build/picoclaw /usr/local/bin/picoclaw
+
+# Copy skill files for workspace injection at startup
+COPY config/skills/ /opt/picoclaw-skills/
 
 # Create non-root user and group
 RUN addgroup -g 1000 picoclaw && \
