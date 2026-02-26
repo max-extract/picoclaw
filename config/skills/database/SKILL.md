@@ -18,21 +18,13 @@ Default scope is runtime bots, not recorders.
 - DB connectivity is uncertain and fallback is needed
 - you need source-confidence labeling (`db` vs `api_fallback`)
 
-**Runtime API Endpoints**
+**Runtime API Discovery**
 
-Internal hosts:
-- **BTC 5m:** `http://ess8wcoo0cc8gwc8s8osc84g:3000`
-- **BTC 15m:** `http://hkcowc8080w80kgoss8k40ss:3000`
-- **ETH 15m:** `http://g0o4ccw00c4gskog44o8g08w:3000`
+Never hardcode bot names or per-bot hostnames in responses.
+Discover bots dynamically from inventory, then query each runtime API endpoint.
 
-Key routes:
-
-```sh
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/state
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/strategy/state
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/polymarket/activity?limit=20
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/health
-```
+Discovery command:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
 
 **Ranking Path (Preferred)**
 
@@ -54,7 +46,7 @@ If unavailable, fallback:
 
 **Guidance**
 
-- For PnL/trade summaries, prefer `/api/state` and `/api/polymarket/activity`.
+- For PnL/trade summaries, prefer `/api/state` and `/api/polymarket/activity` per discovered bot.
 - For ranking questions, return source as `db` or `api_fallback`.
 - If DB is not configured, report explicit reason and continue with fallback.
 - Cross-reference infra policy:

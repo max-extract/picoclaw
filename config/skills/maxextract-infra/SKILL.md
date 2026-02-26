@@ -7,8 +7,8 @@ description: Manage MaxExtract runtime bots via Coolify and bot backend APIs.
 
 **Scope**
 
-- Runtime bots only (`paper`, `live`): EMA Until Expiry, Conviction, Latency Lite.
-- Exclude recorders, DB services, and cross-arb unless explicitly requested.
+- Runtime bots only (`paper`, `live`).
+- Exclude non-runtime services unless explicitly requested.
 
 **Intent Router**
 

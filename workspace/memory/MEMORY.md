@@ -17,6 +17,6 @@
 
 **Known Constraints**
 
-- Cross Arb public endpoint may return 404 depending on Coolify routing.
+- Some public endpoints may return 404 depending on Coolify routing.
 - Coolify deployment logs for failed builds can sometimes be unavailable.
 - ROI 7d/30d may be unavailable on day-0 history; dynamic window is required.

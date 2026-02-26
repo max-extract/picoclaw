@@ -8,7 +8,7 @@ description: Query MaxExtract runtime bots for health, state, and performance wi
 **Scope**
 
 - Default: runtime bots only (`paper`, `live`).
-- Exclude recorders and cross-arb unless explicitly requested.
+- Exclude non-runtime services unless explicitly requested.
 
 **Primary Use Cases**
 
@@ -39,35 +39,18 @@ description: Query MaxExtract runtime bots for health, state, and performance wi
 
 **Runtime Endpoints (Direct Checks)**
 
-- BTC 5m:
-`http://ess8wcoo0cc8gwc8s8osc84g:3000`
-- BTC 15m:
-`http://hkcowc8080w80kgoss8k40ss:3000`
-- ETH 15m:
-`http://g0o4ccw00c4gskog44o8g08w:3000`
+Do not hardcode individual bot names/timeframes in docs or replies.
+Use inventory output to discover active bots and their endpoints, then query:
 
-Useful routes:
-
-```sh
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/health
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/state
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/strategy/state
-curl -s "http://ess8wcoo0cc8gwc8s8osc84g:3000/api/polymarket/activity?limit=20"
-```
+- `/api/health`
+- `/api/state`
+- `/api/strategy/state`
+- `/api/polymarket/activity?limit=20`
 
 **Connectivity Fallback**
 
-If internal UUID hostnames fail (`curl` exit code `6`), use:
-
-- `MAXEXTRACT_RUNTIME_BTC5M_URL`
-- `MAXEXTRACT_RUNTIME_BTC15M_URL`
-- `MAXEXTRACT_RUNTIME_ETH15M_URL`
-
-Example:
-
-```sh
-curl -s "${MAXEXTRACT_RUNTIME_BTC5M_URL}/api/state"
-```
+If internal endpoints fail, use configured public runtime URLs from env/config.
+Do not expose hardcoded per-bot URL names in user-facing output.
 
 **State Fields To Extract**
 
