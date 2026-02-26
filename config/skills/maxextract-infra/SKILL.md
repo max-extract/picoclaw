@@ -1,108 +1,102 @@
 ---
 name: maxextract-infra
-description: Manage MaxExtract services through Coolify API and internal network endpoints.
+description: Manage MaxExtract runtime bots via Coolify and bot backend APIs.
 ---
 
-**REMINDER: Never use # headers or pipe tables in your output. Use **bold** lines and bullet lists only.**
+**REMINDER: Never use # headers or pipe tables in output. Use bold lines and bullet lists.**
 
-**MaxExtract Infrastructure Management**
+**Scope**
 
-You have access to the MaxExtract trading infrastructure via the Coolify deployment platform.
-Use the `exec` tool with `curl` to interact with the Coolify API and internal services.
+- Runtime bots only (`paper`, `live`): EMA Until Expiry, Conviction, Latency Lite.
+- Exclude recorders, DB services, and cross-arb unless explicitly requested.
 
-**Authentication**
+**Intent Router**
 
-All Coolify API calls require a Bearer token:
+- `inventory` or `deploy status`:
+  - run inventory script
+- `realtime state`:
+  - run API state script
+- `roi/pnl ranking`:
+  - run DB ROI script first
+- `executive digest`:
+  - run digest script
+- `periodic update`:
+  - run periodic report script
+- `mutating action` (`restart`, `deploy`, `switch`):
+  - run diagnostics first
+  - ask confirmation before action
 
-```
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/..."
-```
+**Operational Contract**
 
-The token and URL are available as environment variables `COOLIFY_API_TOKEN` and `COOLIFY_API_URL`.
+1. Route from intent to minimal command set.
+2. Prefer DB for realized ranking; fallback to API if DB unavailable.
+3. Keep diagnostics read-only by default.
+4. Ask explicit confirmation before deploy/restart/stop.
+5. Return Telegram-safe, compact output.
 
-**Service Registry (baseline — always verify live)**
+**Orchestration References**
 
-- **DB - Paper:** UUID `zkk4wok8k08s440ggk4sso08`, PostgreSQL + TimescaleDB, host `zkk4wok8k08s440ggk4sso08:5432`
-- **EMA until expiry - BTC 5m:** UUID `ess8wcoo0cc8gwc8s8osc84g`, runtime, host `ess8wcoo0cc8gwc8s8osc84g:3000`
-- **EMA until expiry - BTC 15m:** UUID `hkcowc8080w80kgoss8k40ss`, runtime, host `hkcowc8080w80kgoss8k40ss:3000`
-- **EMA until expiry - ETH 15m:** UUID `g0o4ccw00c4gskog44o8g08w`, runtime, host `g0o4ccw00c4gskog44o8g08w:3000`
-- **Recorder 5min:** UUID `vwg4o4cw4wg8ckwk88ks0408`, recorder, host `vwg4o4cw4wg8ckwk88ks0408:3000`
-- **Recorder 15min:** UUID `p8g00kog08ksoo8sksok4ssw`, recorder, host `p8g00kog08ksoo8sksok4ssw:3000`
-- **Cross Arb Monitor:** UUID `c4c08gokgcggs08soo4088os`, strategy monitor, host `c4c08gokgcggs08soo4088os:3000`
+- Agent policy:
+`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/AGENT.md`
+- User intent profile:
+`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/USER.md`
+- Persistent context:
+`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/memory/MEMORY.md`
+- MaxExtract infrastructure baseline:
+`/Users/gherardolattanzi/Desktop/maxextract/AGENTS.md`
+- Strategy catalog:
+`/Users/gherardolattanzi/Desktop/maxextract/strategies/`
 
-Always verify via live API — this list may be stale.
+**Mandatory Commands**
 
-**Dynamic Discovery (Always Prefer This)**
+- Inventory:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
+- API state:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
+- DB ranking:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
+- Digest:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
+- Periodic:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
 
-When asked "what services do we have?" or "status", run:
+**Mutation Gate**
 
-```sh
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications" | jq '.[] | {name, uuid, status}'
-```
+Before any write action, always provide:
 
-Build the answer from this live result.
+- affected bots
+- current health snapshot
+- source confidence (`db` or `api_fallback`)
+- rollback direction
+- explicit confirmation prompt
 
-**Coolify API Operations**
+**Response Contract**
 
-**Check all services:**
-```sh
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications" | jq '.[] | {name, uuid, status}'
-```
+- Always state source: `db` or `api_fallback`.
+- Always state window: `auto` or explicit days.
+- If data is partial, mark missing fields as `n/a`, never fabricate.
+- For mutating requests, include:
+- affected bots
+- risk/blast radius
+- rollback direction
+- explicit confirmation prompt
 
-**Get single service:**
-```sh
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications/{uuid}"
-```
+**Output Skeleton**
 
-**Read logs:**
-```sh
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications/{uuid}/logs?since=60"
-```
+- **Summary**
+- **Source**
+- **Window**
+- **Bots**
+- **Next action** (only if actionable)
 
-**Restart (ask confirmation first):**
-```sh
-curl -s -X POST -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications/{uuid}/restart"
-```
+**Failure Handling**
 
-**Deploy:**
-```sh
-curl -s -X POST -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/deploy?uuid={uuid}"
-```
-
-**List deployments:**
-```sh
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications/{uuid}/deployments"
-```
-
-**List env vars:**
-```sh
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications/{uuid}/envs"
-```
-
-**Quick Health Check (no auth, internal network)**
-
-```sh
-curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/health
-curl -s http://hkcowc8080w80kgoss8k40ss:3000/api/health
-curl -s http://g0o4ccw00c4gskog44o8g08w:3000/api/health
-curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/health
-curl -s http://p8g00kog08ksoo8sksok4ssw:3000/api/health
-```
-
-**Safety Rules**
-
-- Paper environment uses `DRY_RUN=true` — all trades are simulated.
-- Never change `DRY_RUN` from `true` to `false` without explicit user approval.
-- Always check for open trades before restarting runtime services.
-- Live environment is currently empty — do not create services there without approval.
-
-**Output Formatting**
-
-- Never use # headers — use **bold** lines.
-- Never use pipe tables or `|---|` separators.
-- Use bullet lists or monospaced code blocks.
-- One status emoji per line max: 🟢 healthy, 🟡 degraded, 🔴 unreachable, ⚠️ action.
-- **Bold** only key labels: **Summary**, **Services**, **Next action**.
-- Do not repeat the same service in both intro and data rows.
-- If a call fails, show `n/a` and continue.
-- End with **Next action:** when any row is not healthy.
+- If DB unavailable:
+  - continue with `api_fallback`
+  - show explicit DB error reason
+- If one bot API fails:
+  - keep partial output
+  - mark bot fields as `n/a`
+- If Coolify API fails:
+  - report failure
+  - do not execute mutating actions

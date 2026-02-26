@@ -202,6 +202,11 @@
       "api_base": "https://api.mistral.ai/v1"
     }
   },
+  "maxextract": {
+    "database_url": "postgres://user:pass@host:5432/maxextract",
+    "database_url_paper": "postgres://user:pass@paper-host:5432/maxextract",
+    "database_url_live": "postgres://user:pass@live-host:5432/maxextract"
+  },
   "tools": {
     "web": {
       "brave": {

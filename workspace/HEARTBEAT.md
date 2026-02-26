@@ -1,5 +1,22 @@
-**Periodic Ops Checks**
+**Periodic Bot Reports**
 
-- Every cycle, run a lightweight health check on runtime and recorder APIs.
-- If any service is degraded/unreachable, produce a compact status list and one next action.
-- If all services are healthy, respond with `HEARTBEAT_OK` only.
+- Every heartbeat cycle run:
+`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+- Expected behavior:
+- sends a compact report every 3 hours
+- returns `HEARTBEAT_OK` between intervals
+- failure handling:
+- if DB unavailable, keep report with `pnl_source=api_fallback`
+- if API partial, keep available bots and mark `n/a` per failed bot
+
+**Operational Checks**
+
+- Before sending report:
+- read `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/USER.md`
+- read `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/memory/MEMORY.md`
+- Output order:
+- **Summary**
+- **Source**
+- **Window**
+- **Bots**
+- **Next action** (only if actionable)

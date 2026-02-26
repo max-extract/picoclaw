@@ -186,6 +186,7 @@ func (c *TelegramChannel) Send(ctx context.Context, msg bus.OutboundMessage) err
 			"error": err.Error(),
 		})
 		tgMsg.ParseMode = ""
+		tgMsg.Text = msg.Content
 		_, err = c.bot.SendMessage(ctx, tgMsg)
 		return err
 	}
@@ -425,19 +426,22 @@ func markdownToTelegramHTML(text string) string {
 		return ""
 	}
 
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+
 	codeBlocks := extractCodeBlocks(text)
 	text = codeBlocks.text
 
 	inlineCodes := extractInlineCodes(text)
 	text = inlineCodes.text
 
-	text = regexp.MustCompile(`^#{1,6}\s+(.+)$`).ReplaceAllString(text, "$1")
+	text = regexp.MustCompile(`(?m)^#{1,6}\s+(.+)$`).ReplaceAllString(text, "$1")
 
-	text = regexp.MustCompile(`^>\s*(.*)$`).ReplaceAllString(text, "$1")
+	text = regexp.MustCompile(`(?m)^>\s*(.*)$`).ReplaceAllString(text, "$1")
 
 	text = escapeHTML(text)
 
-	text = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`).ReplaceAllString(text, `<a href="$2">$1</a>`)
+	text = replaceMarkdownLinks(text)
 
 	text = regexp.MustCompile(`\*\*(.+?)\*\*`).ReplaceAllString(text, "<b>$1</b>")
 
@@ -454,7 +458,8 @@ func markdownToTelegramHTML(text string) string {
 
 	text = regexp.MustCompile(`~~(.+?)~~`).ReplaceAllString(text, "<s>$1</s>")
 
-	text = regexp.MustCompile(`^[-*]\s+`).ReplaceAllString(text, "• ")
+	text = regexp.MustCompile(`(?m)^[-*]\s+(.*)$`).ReplaceAllString(text, "• $1")
+	text = regexp.MustCompile(`(?m)^\d+\.\s+(.*)$`).ReplaceAllString(text, "• $1")
 
 	for i, code := range inlineCodes.codes {
 		escaped := escapeHTML(code)
@@ -523,6 +528,27 @@ func extractInlineCodes(text string) inlineCodeMatch {
 
 func escapeHTML(text string) string {
 	text = strings.ReplaceAll(text, "&", "&amp;")
+	text = strings.ReplaceAll(text, "<", "&lt;")
+	text = strings.ReplaceAll(text, ">", "&gt;")
+	return text
+}
+
+func replaceMarkdownLinks(text string) string {
+	re := regexp.MustCompile(`\[([^\]]+)\]\(([^)\s]+)\)`)
+	return re.ReplaceAllStringFunc(text, func(m string) string {
+		parts := re.FindStringSubmatch(m)
+		if len(parts) != 3 {
+			return m
+		}
+		label := parts[1]
+		href := escapeHTMLAttr(parts[2])
+		return fmt.Sprintf(`<a href="%s">%s</a>`, href, label)
+	})
+}
+
+func escapeHTMLAttr(text string) string {
+	text = strings.ReplaceAll(text, "&", "&amp;")
+	text = strings.ReplaceAll(text, `"`, "&quot;")
 	text = strings.ReplaceAll(text, "<", "&lt;")
 	text = strings.ReplaceAll(text, ">", "&gt;")
 	return text
