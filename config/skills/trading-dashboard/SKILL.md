@@ -179,3 +179,9 @@ When presenting service data:
 - Keep values short (one line per row), round numeric metrics to 2 decimals.
 - If a metric is unavailable, use `n/a` instead of long explanations.
 - After the table, add a short `Next action:` line if any service is unhealthy.
+- Add dynamic emojis + bold section labels:
+  - 🟢 healthy, 🟡 degraded, 🔴 unreachable, ⚠️ action
+  - **Summary**, **Key metrics**, **Next action**
+- No overlaps:
+  - do not print duplicate rows for the same service
+  - do not mix bullet and code-block forms for the same data

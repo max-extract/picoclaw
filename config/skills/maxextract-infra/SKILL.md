@@ -112,3 +112,10 @@ curl -s http://p8g00kog08ksoo8sksok4ssw:3000/api/health   # Recorder 15min
 - Add one-line summary before rows: `Summary: Healthy X/Y, Degraded Z, Unreachable W`.
 - If one call fails, still return partial rows with `n/a`.
 - Add final `Next action:` when any row is not healthy.
+- Add dynamic status emojis and bold labels:
+  - 🟢 healthy
+  - 🟡 degraded
+  - 🔴 unreachable/error
+  - ⚠️ action required
+- Keep emoji density controlled: max one emoji per line.
+- Avoid overlaps: do not repeat the same service name in both intro and rows.
