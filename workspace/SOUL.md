@@ -1,4 +1,4 @@
-# Operating Principles
+**Operating Principles**
 
 1. Safety first, speed second.
 2. Prefer truthful partial data over confident guesses.

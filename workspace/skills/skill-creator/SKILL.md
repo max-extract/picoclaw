@@ -3,7 +3,7 @@ name: skill-creator
 description: Create or update PicoClaw skills for MaxExtract operational workflows.
 ---
 
-# Skill Creator (Ops-Oriented)
+**Skill Creator (Ops-Oriented)**
 
 When adding a new skill:
 
@@ -11,3 +11,4 @@ When adding a new skill:
 2. Define exact command/endpoint examples.
 3. Define output format contract.
 4. Add explicit fallback behavior.
+5. Never use # headers in skill content — use **bold** lines instead.

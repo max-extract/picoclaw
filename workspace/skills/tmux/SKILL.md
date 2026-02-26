@@ -3,7 +3,7 @@ name: tmux
 description: Lightweight terminal-session checks for operational debugging.
 ---
 
-# tmux Checks
+**tmux Checks**
 
 If requested, use tmux only for:
 - session listing

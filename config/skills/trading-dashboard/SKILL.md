@@ -3,12 +3,14 @@ name: trading-dashboard
 description: Query runtime and recorder APIs for market state, trades, PnL, and service health.
 ---
 
-# MaxExtract Trading Dashboard
+**REMINDER: Never use # headers or pipe tables in your output. Use **bold** lines and bullet lists only.**
 
-You can query the MaxExtract trading bot runtime services and orderbook recorders
+**MaxExtract Trading Dashboard**
+
+Query the MaxExtract trading bot runtime services and orderbook recorders
 over the internal Docker network. No authentication is needed for these endpoints.
 
-## Connectivity Fallback (Important)
+**Connectivity Fallback (Important)**
 
 If internal UUID hostnames fail with `curl` exit code 6, use the public base URLs
 provided via environment variables:
@@ -27,21 +29,19 @@ curl -s "${MAXEXTRACT_RUNTIME_BTC5M_URL}/api/state"
 curl -s "${MAXEXTRACT_RECORDER_5M_URL}/api/stats"
 ```
 
-## Runtime Services (Trading Bots)
+**Runtime Services (Trading Bots)**
 
-Three runtime instances run the "EMA Until Expiry" strategy on different markets:
+Three runtime instances run the "EMA Until Expiry" strategy:
 
-- BTC 5-minute: `http://ess8wcoo0cc8gwc8s8osc84g:3000`
-- BTC 15-minute: `http://hkcowc8080w80kgoss8k40ss:3000`
-- ETH 15-minute: `http://g0o4ccw00c4gskog44o8g08w:3000`
+- **BTC 5m:** `http://ess8wcoo0cc8gwc8s8osc84g:3000`
+- **BTC 15m:** `http://hkcowc8080w80kgoss8k40ss:3000`
+- **ETH 15m:** `http://g0o4ccw00c4gskog44o8g08w:3000`
 
-## Cross Arb Monitor (Strategy 5)
+**Cross Arb Monitor (Strategy 5)**
 
-Cross Arb has a separate monitor service:
+- **Cross Arb Monitor:** `http://c4c08gokgcggs08soo4088os:3000`
 
-- Cross Arb Monitor: `http://c4c08gokgcggs08soo4088os:3000`
-
-### Cross Arb Endpoints
+Cross Arb endpoints:
 
 ```sh
 curl -s http://c4c08gokgcggs08soo4088os:3000/api/health
@@ -50,15 +50,13 @@ curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=btc"
 curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=eth"
 ```
 
-### ROI Query (Cross Arb)
+**ROI Query (Cross Arb)**
 
 Use `api/ui/state` and read:
 - `baseState.performance.roi`
 - `baseState.performance.totalPnl`
 - `baseState.performance.trades`
 - `baseState.performance.winRate`
-
-Example:
 
 ```sh
 curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=btc" | jq '{roi: .baseState.performance.roi, totalPnl: .baseState.performance.totalPnl, trades: .baseState.performance.trades, winRate: .baseState.performance.winRate}'
@@ -67,30 +65,29 @@ curl -s "http://c4c08gokgcggs08soo4088os:3000/api/ui/state?symbol=btc" | jq '{ro
 Public fallback:
 
 ```sh
-curl -s "${MAXEXTRACT_CROSS_ARB_URL}/api/ui/state?symbol=btc" | jq '{roi: .baseState.performance.roi, totalPnl: .baseState.performance.totalPnl, trades: .baseState.performance.trades, winRate: .baseState.performance.winRate}'
+curl -s "${MAXEXTRACT_CROSS_ARB_URL}/api/ui/state?symbol=btc" | jq '{roi: .baseState.performance.roi, totalPnl: .baseState.performance.totalPnl}'
 ```
 
-If the endpoint returns `404 page not found`, report that Cross Arb API is not exposed publicly and suggest checking Coolify routing/port for that service.
+If the endpoint returns `404 page not found`, report that Cross Arb API is not exposed publicly and suggest checking Coolify routing.
 
-### Key Endpoints
+**Key Runtime Endpoints**
 
 **Full dashboard state** (positions, trades, performance, market data):
 ```sh
 curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/state
 ```
-Returns JSON with: `market`, `positions`, `recentTrades`, `performance`, `analytics`, `uptime`, etc.
 
 **Health check:**
 ```sh
 curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/health
 ```
 
-**Strategy state** (current parameters, thresholds, regime):
+**Strategy state** (parameters, thresholds, regime):
 ```sh
 curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/strategy/state
 ```
 
-**Market snapshot** (current orderbook, prices, spreads):
+**Market snapshot** (orderbook, prices, spreads):
 ```sh
 curl -s "http://ess8wcoo0cc8gwc8s8osc84g:3000/api/mind-conviction/snapshot?asset=btc&timeframe=5m&bankroll=200"
 ```
@@ -105,7 +102,7 @@ curl -s http://ess8wcoo0cc8gwc8s8osc84g:3000/api/mind-conviction/recorder-status
 curl -s "http://ess8wcoo0cc8gwc8s8osc84g:3000/api/polymarket/activity?limit=20"
 ```
 
-### Trading Controls (use with caution)
+**Trading Controls (use with caution)**
 
 **Manual entry signal** (paper mode only):
 ```sh
@@ -122,14 +119,12 @@ curl -s -X POST http://ess8wcoo0cc8gwc8s8osc84g:3000/api/test-exit-signal
 curl -s -X POST http://ess8wcoo0cc8gwc8s8osc84g:3000/api/reset-all
 ```
 
-## Orderbook Recorders
+**Orderbook Recorders**
 
-Two recorders capture orderbook snapshots at different intervals:
+Two recorders capture orderbook snapshots:
 
-- Recorder 5-minute: `http://vwg4o4cw4wg8ckwk88ks0408:3000`
-- Recorder 15-minute: `http://p8g00kog08ksoo8sksok4ssw:3000`
-
-### Key Endpoints
+- **Recorder 5m:** `http://vwg4o4cw4wg8ckwk88ks0408:3000`
+- **Recorder 15m:** `http://p8g00kog08ksoo8sksok4ssw:3000`
 
 **Service stats** (assets tracked, snapshot counts, uptime):
 ```sh
@@ -156,32 +151,24 @@ curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/cost-metrics
 curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/data-footprint
 ```
 
-## Tips
+**Tips**
 
-- To get a quick overview, query `/api/state` on each runtime and `/api/stats` on each recorder.
-- The `performance` field in `/api/state` contains PnL, win rate, and trade count.
-- The `recentTrades` array shows the last trades with entry/exit prices and PnL.
-- All runtimes are in paper mode (`DRY_RUN=true`), so trades are simulated.
-- Replace the hostname UUID in the URLs above to query different instances.
-- For Cross Arb ROI, do not use DB assumptions; always query `/api/ui/state`.
+- Query `/api/state` on each runtime and `/api/stats` on each recorder for a quick overview.
+- The `performance` field in `/api/state` has PnL, win rate, trade count.
+- The `recentTrades` array shows last trades with entry/exit prices and PnL.
+- All runtimes are in paper mode (`DRY_RUN=true`), trades are simulated.
+- Replace the hostname UUID in URLs to query different instances.
+- For Cross Arb ROI, always query `/api/ui/state`, do not assume DB schema.
 
-## Response Formatting Rules
+**Output Formatting**
 
-When presenting service data:
-
-- Telegram-safe rendering only: avoid markdown pipe tables.
-- Never output markdown table separators like `|---|`.
-- Use either bullets or monospaced rows in code block.
-- Row format:
-  - `SERVICE | STATUS | KEY_METRICS | NOTES`
-- Add one-line summary before table:
-  - `Summary: Healthy X/Y, Degraded Z, Unreachable W`
-- Keep values short (one line per row), round numeric metrics to 2 decimals.
-- If a metric is unavailable, use `n/a` instead of long explanations.
-- After the table, add a short `Next action:` line if any service is unhealthy.
-- Add dynamic emojis + bold section labels:
-  - 🟢 healthy, 🟡 degraded, 🔴 unreachable, ⚠️ action
-  - **Summary**, **Key metrics**, **Next action**
-- No overlaps:
-  - do not print duplicate rows for the same service
-  - do not mix bullet and code-block forms for the same data
+- Never use # headers — use **bold** lines.
+- Never use pipe tables or `|---|` separators.
+- Use bullet lists or monospaced code blocks.
+- Row format: `SERVICE | STATUS | KEY_METRICS | NOTES`
+- One status emoji per line max: 🟢 healthy, 🟡 degraded, 🔴 unreachable, ⚠️ action.
+- **Bold** only key labels: **Summary**, **Key metrics**, **Next action**.
+- Do not print duplicate rows for the same service.
+- Do not mix bullet and code-block forms for the same data.
+- Round numeric metrics to 2 decimal places.
+- Use `n/a` for unavailable metrics.
