@@ -31,9 +31,14 @@ services:
     container_name: picoclaw-gateway
     restart: unless-stopped
     volumes:
-      # Persistent workspace (sessions, memory, logs)
       - picoclaw-workspace:/home/picoclaw/.picoclaw/workspace
-    command: ["gateway"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /home/picoclaw/.picoclaw/config.json << 'CFGEOF'
+        {"agents":{"defaults":{"workspace":"~/.picoclaw/workspace","restrict_to_workspace":true,"model":"openrouter-auto","max_tokens":8192,"temperature":0.7,"max_tool_iterations":20}},"model_list":[],"providers":{"openrouter":{"api_key":"","api_base":"https://openrouter.ai/api/v1"}},"tools":{"web":{"duckduckgo":{"enabled":true,"max_results":5},"brave":{"enabled":false},"tavily":{"enabled":false}}},"heartbeat":{"enabled":true,"interval":60},"gateway":{"host":"0.0.0.0","port":18790}}
+        CFGEOF
+        exec picoclaw gateway
 
 volumes:
   picoclaw-workspace:
