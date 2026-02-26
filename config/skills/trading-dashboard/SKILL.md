@@ -175,9 +175,10 @@ curl -s http://vwg4o4cw4wg8ckwk88ks0408:3000/api/data-footprint
 
 When presenting service data:
 
-- Always use compact markdown tables for operational answers.
-- Use exactly these columns:
-  - `Service | Status | Key Metrics | Notes`
+- Telegram-safe rendering only: avoid markdown pipe tables.
+- Use either bullets or monospaced rows in code block.
+- Row format:
+  - `SERVICE | STATUS | KEY_METRICS | NOTES`
 - Add one-line summary before table:
   - `Summary: Healthy X/Y, Degraded Z, Unreachable W`
 - Keep values short (one line per row), round numeric metrics to 2 decimals.

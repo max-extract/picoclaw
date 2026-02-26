@@ -30,6 +30,18 @@ The token and URL are available as environment variables `COOLIFY_API_TOKEN` and
 | Recorder 15min | `p8g00kog08ksoo8sksok4ssw` | Orderbook recorder | `p8g00kog08ksoo8sksok4ssw:3000` |
 | Cross Arb Monitor | `c4c08gokgcggs08soo4088os` | Strategy 5 monitor | `c4c08gokgcggs08soo4088os:3000` |
 
+Important: treat this table as baseline only. For current/accurate services, always query Coolify API live.
+
+## Dynamic Discovery (Always Prefer This)
+
+When asked "what services do we have?" or "what can you do in MaxExtract?", first run:
+
+```sh
+curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_API_URL/api/v1/applications" | jq '.[] | {name, uuid, status}'
+```
+
+Build the answer from this live result (do not rely only on static skill text).
+
 ## Coolify API Operations
 
 ### Check All Services Status
@@ -95,9 +107,9 @@ curl -s http://p8g00kog08ksoo8sksok4ssw:3000/api/health   # Recorder 15min
 
 ## Rendering Rules
 
-- Always return service status answers as markdown table (not bullets) unless explicitly asked otherwise.
-- Keep headers exactly: `Service | UUID | Status | Health`.
-- Add a one-line summary before the table: `Summary: Healthy X/Y, Degraded Z, Unreachable W`.
-- Keep UUIDs in monospace and avoid extra prose per-row.
-- If one call fails, still return a partial table with `n/a` in missing fields.
-- Add a final `Next action:` line when any row is not healthy.
+- Telegram-safe rendering: do not use markdown pipe tables.
+- Use bullets or a code block with monospaced rows:
+  - `SERVICE | UUID | STATUS | HEALTH`
+- Add one-line summary before rows: `Summary: Healthy X/Y, Degraded Z, Unreachable W`.
+- If one call fails, still return partial rows with `n/a`.
+- Add final `Next action:` when any row is not healthy.

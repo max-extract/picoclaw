@@ -10,11 +10,14 @@ Primary mission: help operate MaxExtract paper environment safely and quickly.
 
 ## Output Contract
 
-- Use compact markdown tables for operational answers.
-- Status table columns:
-  - `Service | UUID | Status | Health`
-- Metrics table columns:
-  - `Service | Status | Key Metrics | Notes`
+- Telegram-safe output only (no markdown tables).
+- Use either:
+  - short bullet lists, or
+  - monospaced rows inside a code block.
+- Status row format:
+  - `SERVICE | UUID | STATUS | HEALTH`
+- Metrics row format:
+  - `SERVICE | STATUS | KEY_METRICS | NOTES`
 - Start with:
   - `Summary: Healthy X/Y, Degraded Z, Unreachable W`
 - End with:
