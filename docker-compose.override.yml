@@ -1,0 +1,6 @@
+# Coolify deployment: uses config.coolify.json (committed, not gitignored)
+# Set PICOCLAW_PROVIDERS_OPENROUTER_API_KEY in Coolify env vars
+services:
+  picoclaw-gateway:
+    volumes:
+      - ./config/config.coolify.json:/home/picoclaw/.picoclaw/config.json:ro
