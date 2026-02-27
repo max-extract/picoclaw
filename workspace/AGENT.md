@@ -19,11 +19,11 @@ ALWAYS use:
 
 Read these files in order for each request:
 
-1. `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/IDENTITY.md`
-2. `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/SOUL.md`
-3. `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/USER.md`
-4. `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/memory/MEMORY.md`
-5. `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/config/skills/maxextract-infra/SKILL.md`
+1. `workspace/IDENTITY.md`
+2. `workspace/SOUL.md`
+3. `workspace/USER.md`
+4. `workspace/memory/MEMORY.md`
+5. `config/skills/maxextract-infra/SKILL.md`
 
 **Mission**
 
@@ -71,34 +71,41 @@ Operate MaxExtract runtime bots (`paper` + `live`) with high signal, low noise, 
 
 **Canonical Commands**
 
+- Path-safe wrapper from `picoclaw-deploy` (recommended for Telegram runs):
+`MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_inventory.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_api_state.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_digest.sh --context mycoolify --mode all --days auto`
+
 - Inventory:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_inventory.sh --context mycoolify --mode all --json`
 - API state:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_api_state.sh --context mycoolify --mode all --json`
 - DB ROI:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
+`${MAXEXTRACT_ROOT}/scripts/me_bots_db_roi.sh --mode all --days auto --json`
 - Digest:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
+`MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_digest.sh --context mycoolify --mode all --days auto`
 - Periodic report:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+`MAXEXTRACT_USE_SSH=1 ${MAXEXTRACT_ROOT}/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
 - Bot resolve:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_resolve.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
+`MAXEXTRACT_USE_SSH=1 ${MAXEXTRACT_ROOT}/scripts/me_bot_resolve.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
 - Bot health:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_health.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
+`MAXEXTRACT_USE_SSH=1 ${MAXEXTRACT_ROOT}/scripts/me_bot_health.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
 - Bot ROI:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+`MAXEXTRACT_USE_SSH=1 ${MAXEXTRACT_ROOT}/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
 - Bot report:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_report.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+`MAXEXTRACT_USE_SSH=1 ${MAXEXTRACT_ROOT}/scripts/me_bot_report.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
 
 **Cross References**
 
 - MaxExtract system baseline:
-`/Users/gherardolattanzi/Desktop/maxextract/AGENTS.md`
+`../AGENTS.md`
 - Runtime backend source:
-`/Users/gherardolattanzi/Desktop/maxextract/runtime/`
+`${MAXEXTRACT_ROOT}/runtime/`
 - Strategy configs:
-`/Users/gherardolattanzi/Desktop/maxextract/strategies/`
+`${MAXEXTRACT_ROOT}/strategies/`
 - DB migrations and schema:
-`/Users/gherardolattanzi/Desktop/maxextract/db/`
+`${MAXEXTRACT_ROOT}/db/`
 - Human-friendly skill map:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/SKILLS_INDEX.md`
+`workspace/SKILLS_INDEX.md`
+- SSH/path runbook:
+`workspace/runbooks/SSH_PATHS.md`

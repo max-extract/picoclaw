@@ -1,70 +1,84 @@
 ---
 name: database
-description: Access MaxExtract bot data using APIs first, DB only when configured for ranking queries.
+description: Access MaxExtract historical ranking data with DB-first logic and explicit API fallback.
 ---
 
-**REMINDER: Never use # headers or pipe tables in your output. Use **bold** lines and bullet lists only.**
 
-**Default Mode**
+**Database Ranking Operations**
 
-Use runtime bot APIs first for state and health.
-Use DB only for historical ROI/PnL ranking when available via config/env.
-Default scope is runtime bots, not recorders.
+This skill provides operational guidance for `database`.
 
-**When To Use This Skill**
+**Overview**
 
-- user asks ROI/PnL ranking
-- user asks trade summary from historical data
-- DB connectivity is uncertain and fallback is needed
-- you need source-confidence labeling (`db` vs `api_fallback`)
+- Purpose: Provide DB-first historical ranking and PnL interpretation with explicit fallbacks.
+- Focus: ROI authority, data-source arbitration, and window-aware summaries.
 
-**Runtime API Discovery**
+**When to Use This Skill**
 
-Never hardcode bot names or per-bot hostnames in responses.
-Discover bots dynamically from inventory, then query each runtime API endpoint.
+- User asks for ROI or PnL ranking.
+- User asks for historical trade summaries.
+- Data source confidence must be explicit.
 
-Discovery command:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
+**Inputs**
 
-**Ranking Path (Preferred)**
+- Required: target scope (`paper`, `live`, or `all`) and query intent (health, ranking, digest, rollout).
+- Data sources: runtime APIs, script outputs, and DB ranking path when available.
+- Runtime context: current bot inventory and freshness of the latest sample.
 
-Use:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
+**Primary workflow**
 
-If unavailable, fallback:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
+1. Confirm scope and constraints.
+2. Run minimal read-only checks first.
+3. Execute focused commands for the requested outcome.
+4. Return concise results with explicit confidence and risk notes.
 
-Bot-level DB-first ROI command:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+**Quick Start**
 
-**Decision Rules**
+- `cd "${PICOCLAW_ROOT:-$(pwd)}"`
+- `MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_inventory.sh --context mycoolify --mode all --json`
 
-- Ranking request:
-  - try DB first
-  - if DB fails, fallback to API and label `api_fallback`
-- Pure realtime status request:
-  - API only, skip DB
-- If history window missing:
-  - use `--days auto`
+**Commands**
 
-**Guidance**
+- `git status --short`
+- `MAXEXTRACT_ROOT="${MAXEXTRACT_ROOT:-$(cd .. && pwd)}"; rg -n "strategy" "$MAXEXTRACT_ROOT/strategies" "$MAXEXTRACT_ROOT/runtime" "$MAXEXTRACT_ROOT/scripts"`
+- `MAXEXTRACT_ROOT="${MAXEXTRACT_ROOT:-$(cd .. && pwd)}"; rg -n "runtime" "$MAXEXTRACT_ROOT/strategies" "$MAXEXTRACT_ROOT/runtime" "$MAXEXTRACT_ROOT/scripts"`
 
-- For PnL/trade summaries, prefer `/api/state` and `/api/polymarket/activity` per discovered bot.
-- For ranking questions, return source as `db` or `api_fallback`.
-- If DB is not configured, report explicit reason and continue with fallback.
-- Cross-reference infra policy:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/config/skills/maxextract-infra/SKILL.md`
+**Examples**
 
-**Output Minimum**
+```bash
+cd "${PICOCLAW_ROOT:-$(pwd)}"
+MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_digest.sh --context mycoolify --mode all --days auto
+```
 
+**Common failures and fixes**
+
+- Missing or invalid env vars: verify script arguments and required env values.
+- Partial data from one source: continue with available sources and mark missing fields as `n/a`.
+- Endpoint or connectivity failure: use fallback path and label source confidence.
+
+**Fallback behavior**
+
+- If DB query errors, return API fallback output and include DB error reason.
+- If history window is unclear, use `--days auto`.
+
+**Output contract**
+
+- Always include:
 - **Summary**
-- **Source**
+- **Source** (`db` or `api_fallback`)
 - **Window**
 - **Top bots**
-- **Bottom bots** (if requested)
+- **Bottom bots** when requested
+- Use `n/a` for unavailable metrics.
 
-**Quality Guardrails**
+**Safety guardrails**
 
-- never mix DB and API ranking without declaring authority
-- never infer ROI from missing trade history
-- use `n/a` for unavailable metrics
+- Do not mix DB and API ranking without declaring authority.
+- Do not infer ROI from missing trade history.
+- Never use markdown headers or tables.
+
+**Cross References**
+
+- `config/skills/maxextract-infra/SKILL.md`
+- `config/skills/trading-dashboard/SKILL.md`
+- `workspace/USER.md`

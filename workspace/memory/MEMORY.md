@@ -4,9 +4,9 @@
 - Read-only API diagnostics are preferred.
 - Public fallback URLs are required when internal Docker hostnames are unreachable.
 - Core orchestration docs:
-  - `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/AGENT.md`
-  - `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/USER.md`
-  - `/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/config/skills/maxextract-infra/SKILL.md`
+  - `workspace/AGENT.md`
+  - `workspace/USER.md`
+  - `config/skills/maxextract-infra/SKILL.md`
 - Default bot ops parameters:
   - `--mode all`
   - `--days auto`

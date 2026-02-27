@@ -24,4 +24,4 @@
 - Include source explicitly: `db` or `api_fallback`.
 - Include window explicitly: `auto` or `<n>d`.
 - For strategy-switch ideas, always mention affected strategy slugs from:
-`/Users/gherardolattanzi/Desktop/maxextract/strategies/`
+`${MAXEXTRACT_ROOT}/strategies/`

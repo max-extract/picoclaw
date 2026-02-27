@@ -3,93 +3,82 @@ name: trading-dashboard
 description: Query MaxExtract runtime bots for health, state, and performance with safe fallbacks.
 ---
 
-**REMINDER: Never use # headers or pipe tables in your output. Use **bold** lines and bullet lists only.**
 
-**Scope**
+**Trading Dashboard Operations**
 
-- Default: runtime bots only (`paper`, `live`).
-- Exclude non-runtime services unless explicitly requested.
+This skill provides operational guidance for `trading-dashboard`.
 
-**Primary Use Cases**
+**Overview**
 
-- current health across bots
-- performance snapshot per bot
-- strategy/runtime state checks
-- unified operator digest
+- Purpose: Monitor runtime bot health, state, and performance from a strategy/operator perspective.
+- Focus: inventory, realtime API state, digest generation, and ranking context.
 
-**Primary Workflow**
+**When to Use This Skill**
 
-1. Inventory:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
-2. Realtime API state:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
-3. Historical ranking:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
-4. Unified digest:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
+- User asks for health across bots.
+- User asks for strategy or market performance snapshot.
+- User needs unified operator digest.
 
-**Fast Paths**
+**Inputs**
 
-- health-only:
-  - inventory + API state
-- ranking-only:
-  - DB ROI only
-- full operator view:
-  - digest only
+- Required: target scope (`paper`, `live`, or `all`) and query intent (health, ranking, digest, rollout).
+- Data sources: runtime APIs, script outputs, and DB ranking path when available.
+- Runtime context: current bot inventory and freshness of the latest sample.
 
-**Bot Fast Paths**
+**Primary workflow**
 
-- one bot health/state:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_health.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
-- one bot ROI/PnL:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
-- one bot unified report:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_report.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+1. Confirm scope and constraints.
+2. Run minimal read-only checks first.
+3. Execute focused commands for the requested outcome.
+4. Return concise results with explicit confidence and risk notes.
 
-**Runtime Endpoints (Direct Checks)**
+**Quick Start**
 
-Do not hardcode individual bot names/timeframes in docs or replies.
-Use inventory output to discover active bots and their endpoints, then query:
+- `cd "${PICOCLAW_ROOT:-$(pwd)}"`
+- `MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_inventory.sh --context mycoolify --mode all --json`
 
-- `/api/health`
-- `/api/state`
-- `/api/strategy/state`
-- `/api/polymarket/activity?limit=20`
+**Commands**
 
-**Connectivity Fallback**
+- `git status --short`
+- `MAXEXTRACT_ROOT="${MAXEXTRACT_ROOT:-$(cd .. && pwd)}"; rg -n "strategy" "$MAXEXTRACT_ROOT/strategies" "$MAXEXTRACT_ROOT/runtime" "$MAXEXTRACT_ROOT/scripts"`
+- `MAXEXTRACT_ROOT="${MAXEXTRACT_ROOT:-$(cd .. && pwd)}"; rg -n "runtime" "$MAXEXTRACT_ROOT/strategies" "$MAXEXTRACT_ROOT/runtime" "$MAXEXTRACT_ROOT/scripts"`
 
-If internal endpoints fail, use configured public runtime URLs from env/config.
-Do not expose hardcoded per-bot URL names in user-facing output.
+**Examples**
 
-**State Fields To Extract**
+```bash
+cd "${PICOCLAW_ROOT:-$(pwd)}"
+MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_digest.sh --context mycoolify --mode all --days auto
+```
 
-- bot identity: `mode`, `market`, `strategy`
-- health: `ok`, `uptime`, `errors`
-- performance: `pnl`, `roi`, `trades`, `win_rate`
-- freshness: timestamp of source query
+**Common failures and fixes**
 
-**Output Contract**
+- Missing or invalid env vars: verify script arguments and required env values.
+- Partial data from one source: continue with available sources and mark missing fields as `n/a`.
+- Endpoint or connectivity failure: use fallback path and label source confidence.
+
+**Fallback behavior**
+
+- If API endpoints fail, use configured public runtime URLs and mark source.
+- If DB ranking fails, continue with API fallback and state limitation clearly.
+
+**Output contract**
 
 - Always include:
 - **Summary**
 - **Source** (`db` or `api_fallback`)
 - **Window** (`auto` or explicit days)
 - **Bots**
-- **Next action** (only if actionable)
+- **Next action** when actionable
 - Use `n/a` for missing metrics.
-- Never fabricate values.
 
-**Safety Rules**
+**Safety guardrails**
 
-- do not execute test-entry/test-exit/reset endpoints unless explicitly requested
-- if user requests mutation, route through infra mutation gate first
-- if data sources disagree, prefer DB for historical ranking and explain conflict briefly
+- Never execute mutation endpoints unless explicitly requested.
+- Never hardcode bot names or endpoints in user-facing output.
+- Prefer DB as authority for historical ranking conflicts.
 
 **Cross References**
 
-- Infra policy:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/config/skills/maxextract-infra/SKILL.md`
-- User intent profile:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/USER.md`
-- MaxExtract architecture:
-`/Users/gherardolattanzi/Desktop/maxextract/AGENTS.md`
+- `config/skills/maxextract-infra/SKILL.md`
+- `workspace/USER.md`
+- `../AGENTS.md`

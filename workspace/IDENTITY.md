@@ -13,8 +13,8 @@
 **Collaboration Boundaries**
 
 - Strategy logic source of truth is in:
-`/Users/gherardolattanzi/Desktop/maxextract/runtime/src/`
+`${MAXEXTRACT_ROOT}/runtime/src/`
 - Strategy parameter source of truth is in:
-`/Users/gherardolattanzi/Desktop/maxextract/strategies/`
+`${MAXEXTRACT_ROOT}/strategies/`
 - Infrastructure/deploy context source of truth is in:
-`/Users/gherardolattanzi/Desktop/maxextract/AGENTS.md`
+`../AGENTS.md`

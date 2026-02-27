@@ -1,124 +1,85 @@
 ---
 name: maxextract-infra
-description: Manage MaxExtract runtime bots via Coolify and bot backend APIs.
+description: Manage MaxExtract runtime bots via Coolify and runtime APIs with strict mutation gates.
 ---
 
-**REMINDER: Never use # headers or pipe tables in output. Use bold lines and bullet lists.**
 
-**Scope**
+**MaxExtract Infrastructure Operations**
 
-- Runtime bots only (`paper`, `live`).
-- Exclude non-runtime services unless explicitly requested.
+This skill provides operational guidance for `maxextract-infra`.
 
-**Intent Router**
+**Overview**
 
-- `inventory` or `deploy status`:
-  - run SSH-first inventory command
-- `realtime state`:
-  - run SSH-first API state command
-- `roi/pnl ranking`:
-  - run DB ROI script first
-- `executive digest`:
-  - run SSH-first digest command
-- `periodic update`:
-  - run SSH-first periodic report command
-- `mutating action` (`restart`, `deploy`, `switch`):
-  - run diagnostics first
-  - ask confirmation before action
+- Purpose: Execute safe infra operations for MaxExtract runtime services with mutation gates.
+- Focus: diagnostics first, action gating, rollout awareness, and blast-radius control.
 
-**Operational Contract**
+**When to Use This Skill**
 
-1. Route from intent to minimal command set.
-2. Prefer DB for realized ranking; fallback to API if DB unavailable.
-3. Keep diagnostics read-only by default.
-4. Ask explicit confirmation before deploy/restart/stop.
-5. Return Telegram-safe, compact output.
+- User asks for deploy status or bot inventory.
+- User asks for realtime runtime state or ranking.
+- User requests a mutating infra action.
 
-**Orchestration References**
+**Inputs**
 
-- Agent policy:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/AGENT.md`
-- User intent profile:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/USER.md`
-- Persistent context:
-`/Users/gherardolattanzi/Desktop/maxextract/picoclaw-deploy/workspace/memory/MEMORY.md`
-- MaxExtract infrastructure baseline:
-`/Users/gherardolattanzi/Desktop/maxextract/AGENTS.md`
-- Strategy catalog:
-`/Users/gherardolattanzi/Desktop/maxextract/strategies/`
+- Required: target scope (`paper`, `live`, or `all`) and query intent (health, ranking, digest, rollout).
+- Data sources: runtime APIs, script outputs, and DB ranking path when available.
+- Runtime context: current bot inventory and freshness of the latest sample.
 
-**Mandatory Commands**
+**Primary workflow**
 
-- SSH defaults:
-`MAXEXTRACT_USE_SSH=1`
-`MAXEXTRACT_SSH_TARGET=<user@host>`
-- Telegram rendering default:
-`MAXEXTRACT_OUTPUT_FORMAT=telegram`
-- Inventory:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
-- API state:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
-- DB ranking:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
-- Digest:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
-- Periodic:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+1. Confirm scope and constraints.
+2. Run minimal read-only checks first.
+3. Execute focused commands for the requested outcome.
+4. Return concise results with explicit confidence and risk notes.
 
-**Bot-Specific Commands**
+**Quick Start**
 
-- Resolve one bot:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_resolve.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
-- Bot health/state:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_health.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
-- Bot ROI/PnL (DB-first):
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
-- Unified bot report:
-`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_report.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+- `cd "${PICOCLAW_ROOT:-$(pwd)}"`
+- `MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_inventory.sh --context mycoolify --mode all --json`
 
-**Rendering Modes**
+**Commands**
 
-- `--json`: machine parsing.
-- `--telegram` (or default): bold sections + bullets, Telegram-safe.
-- `--table`: legacy terminal table/flat output.
+- `git status --short`
+- `MAXEXTRACT_ROOT="${MAXEXTRACT_ROOT:-$(cd .. && pwd)}"; rg -n "strategy" "$MAXEXTRACT_ROOT/strategies" "$MAXEXTRACT_ROOT/runtime" "$MAXEXTRACT_ROOT/scripts"`
+- `MAXEXTRACT_ROOT="${MAXEXTRACT_ROOT:-$(cd .. && pwd)}"; rg -n "runtime" "$MAXEXTRACT_ROOT/strategies" "$MAXEXTRACT_ROOT/runtime" "$MAXEXTRACT_ROOT/scripts"`
 
-**Mutation Gate**
+**Examples**
 
-Before any write action, always provide:
+```bash
+cd "${PICOCLAW_ROOT:-$(pwd)}"
+MAXEXTRACT_USE_SSH=1 ./workspace/bin/me.sh me_bots_digest.sh --context mycoolify --mode all --days auto
+```
 
-- affected bots
-- current health snapshot
-- source confidence (`db` or `api_fallback`)
-- rollback direction
-- explicit confirmation prompt
+**Common failures and fixes**
 
-**Response Contract**
+- Missing or invalid env vars: verify script arguments and required env values.
+- Partial data from one source: continue with available sources and mark missing fields as `n/a`.
+- Endpoint or connectivity failure: use fallback path and label source confidence.
 
-- Always state source: `db` or `api_fallback`.
-- Always state window: `auto` or explicit days.
-- If data is partial, mark missing fields as `n/a`, never fabricate.
-- For mutating requests, include:
-- affected bots
-- risk/blast radius
-- rollback direction
-- explicit confirmation prompt
+**Fallback behavior**
 
-**Output Skeleton**
+- If DB is unavailable, continue with API fallback and explain source downgrade.
+- If one bot endpoint fails, keep partial output and mark missing fields `n/a`.
+- If Coolify access fails, block mutating actions and return diagnostics-only result.
 
+**Output contract**
+
+- Always include:
 - **Summary**
 - **Source**
 - **Window**
 - **Bots**
-- **Next action** (only if actionable)
+- **Next action** when actionable
+- For mutations, always include blast radius and rollback direction.
 
-**Failure Handling**
+**Safety guardrails**
 
-- If DB unavailable:
-  - continue with `api_fallback`
-  - show explicit DB error reason
-- If one bot API fails:
-  - keep partial output
-  - mark bot fields as `n/a`
-- If Coolify API fails:
-  - report failure
-  - do not execute mutating actions
+- Ask explicit confirmation before any mutation.
+- Never fabricate healthy status when data is missing.
+- Never use markdown headers or tables.
+
+**Cross References**
+
+- `workspace/AGENT.md`
+- `workspace/USER.md`
+- `workspace/memory/MEMORY.md`
