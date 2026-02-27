@@ -2,6 +2,7 @@ package channels
 
 import (
 	"context"
+	"os/exec"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -462,6 +463,65 @@ func normalizeRunCommand(raw string) string {
 	return trimmed
 }
 
+func (c *TelegramChannel) buildOpsShellCommand(cmd, args string) (string, error) {
+	switch cmd {
+	case "bots":
+		return fmt.Sprintf("MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bots_api_state.sh --context mycoolify --mode all", maxextractScriptsDir), nil
+	case "bot":
+		if args == "" {
+			return "", fmt.Errorf("Uso: /bot <mode> <strategy> <market>\nEsempio: /bot paper ema-until-expiry btc-5m")
+		}
+		fields := strings.Fields(args)
+		if len(fields) < 3 {
+			return "", fmt.Errorf("Parametri insufficienti.\nUso: /bot <mode> <strategy> <market>\nEsempio: /bot live conviction btc-5m")
+		}
+		mode, strategy, market := fields[0], fields[1], fields[2]
+		return fmt.Sprintf("MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bot_report.sh --context mycoolify --mode %s --strategy %s --market %s --days auto", maxextractScriptsDir, mode, strategy, market), nil
+	case "run":
+		if args == "" {
+			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots...")
+		}
+		if !isSafeRunCommand(args) {
+			return "", fmt.Errorf("Comando bloccato (unsafe).\nPrefissi consentiti: coolify, me_bot, me_bots")
+		}
+		return normalizeRunCommand(args), nil
+	default:
+		return "", fmt.Errorf("Unsupported command: %s", cmd)
+	}
+}
+
+func truncateForTelegram(text string, maxLen int) string {
+	if len(text) <= maxLen {
+		return text
+	}
+	return text[:maxLen] + "\n\n[output truncated]"
+}
+
+func (c *TelegramChannel) runOpsShellCommand(ctx context.Context, cmdText string) string {
+	runCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(runCtx, "/bin/sh", "-lc", cmdText)
+	out, err := cmd.CombinedOutput()
+	result := strings.TrimSpace(string(out))
+
+	if runCtx.Err() == context.DeadlineExceeded {
+		return "Comando timeout (90s). Riprova con un comando piu corto."
+	}
+
+	if err != nil {
+		if result == "" {
+			result = err.Error()
+		}
+		return truncateForTelegram("Comando fallito:\n"+result, 3900)
+	}
+
+	if result == "" {
+		result = "Comando eseguito, nessun output."
+	}
+	return truncateForTelegram(result, 3900)
+}
+
 func (c *TelegramChannel) buildOpsSlashPrompt(cmd, args string) (string, error) {
 	switch cmd {
 	case "bots":
@@ -494,6 +554,15 @@ func (c *TelegramChannel) buildOpsSlashPrompt(cmd, args string) (string, error) 
 
 func (c *TelegramChannel) handleOpsSlashCommand(ctx context.Context, message *telego.Message, cmd string) error {
 	args := commandArgsFromText(message.Text)
+
+	if cmd == "bot" || cmd == "bots" || cmd == "run" {
+		shellCmd, err := c.buildOpsShellCommand(cmd, args)
+		if err != nil {
+			return c.sendSlashText(ctx, message, err.Error())
+		}
+		return c.sendSlashText(ctx, message, c.runOpsShellCommand(ctx, shellCmd))
+	}
+
 	prompt, err := c.buildOpsSlashPrompt(cmd, args)
 	if err != nil {
 		return c.sendSlashText(ctx, message, err.Error())
