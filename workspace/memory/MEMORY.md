@@ -11,6 +11,7 @@
   - `--mode all`
   - `--days auto`
   - `COOLIFY_CONTEXT=mycoolify`
+  - `MAXEXTRACT_USE_SSH=1`
 - Digest/report source policy:
   - prefer DB
   - fallback to API with `pnl_source=api_fallback`

@@ -1,7 +1,7 @@
 **Periodic Bot Reports**
 
 - Every heartbeat cycle run:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
 - Expected behavior:
 - sends a compact report every 3 hours
 - returns `HEARTBEAT_OK` between intervals

@@ -13,15 +13,15 @@ description: Manage MaxExtract runtime bots via Coolify and bot backend APIs.
 **Intent Router**
 
 - `inventory` or `deploy status`:
-  - run inventory script
+  - run SSH-first inventory command
 - `realtime state`:
-  - run API state script
+  - run SSH-first API state command
 - `roi/pnl ranking`:
   - run DB ROI script first
 - `executive digest`:
-  - run digest script
+  - run SSH-first digest command
 - `periodic update`:
-  - run periodic report script
+  - run SSH-first periodic report command
 - `mutating action` (`restart`, `deploy`, `switch`):
   - run diagnostics first
   - ask confirmation before action
@@ -49,16 +49,38 @@ description: Manage MaxExtract runtime bots via Coolify and bot backend APIs.
 
 **Mandatory Commands**
 
+- SSH defaults:
+`MAXEXTRACT_USE_SSH=1`
+`MAXEXTRACT_SSH_TARGET=<user@host>`
+- Telegram rendering default:
+`MAXEXTRACT_OUTPUT_FORMAT=telegram`
 - Inventory:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
 - API state:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
 - DB ranking:
 `/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
 - Digest:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
 - Periodic:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+
+**Bot-Specific Commands**
+
+- Resolve one bot:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_resolve.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
+- Bot health/state:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_health.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
+- Bot ROI/PnL (DB-first):
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+- Unified bot report:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_report.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+
+**Rendering Modes**
+
+- `--json`: machine parsing.
+- `--telegram` (or default): bold sections + bullets, Telegram-safe.
+- `--table`: legacy terminal table/flat output.
 
 **Mutation Gate**
 

@@ -38,11 +38,31 @@ func commandArgs(text string) string {
 }
 
 func (c *cmd) Help(ctx context.Context, message telego.Message) error {
-	msg := `/start - Start the bot
-/help - Show this help message
-/show [model|channel] - Show current configuration
-/list [models|channels] - List available options
-	`
+	msg := `PicoClaw Ops Menu
+
+Core
+- /start
+- /help
+- /show model|channel
+- /list models|channels
+
+Bot Ops
+- /bots
+- /bot <mode> <strategy> <market>
+- /vedibots
+- /vedibot <mode> <strategy> <market>
+
+Memory
+- /memclear
+- /memoria
+- /cancellamemoria
+
+Runner
+- /run <command>
+  Allowed: coolify ..., me_bot..., me_bots...
+
+Example
+- /bot paper ema-until-expiry btc-5m`
 	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
 		Text:   msg,
@@ -56,7 +76,7 @@ func (c *cmd) Help(ctx context.Context, message telego.Message) error {
 func (c *cmd) Start(ctx context.Context, message telego.Message) error {
 	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
-		Text:   "Hello! I am PicoClaw 🦞",
+		Text:   "MaxExtract Ops Copilot\nHealth + ROI bot-specific, output Telegram-clean\nTry: /bot paper ema-until-expiry btc-5m",
 		ReplyParameters: &telego.ReplyParameters{
 			MessageID: message.MessageID,
 		},

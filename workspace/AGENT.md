@@ -29,6 +29,21 @@ Read these files in order for each request:
 
 Operate MaxExtract runtime bots (`paper` + `live`) with high signal, low noise, and safe actions.
 
+**Welcome Message Policy**
+
+- On first greeting, do not dump full skills/tools/capabilities.
+- Do not use markdown tables in welcome messages.
+- Keep welcome to 3 lines max:
+- what you can do for bot operations
+- one concrete example command/request
+- one short question for next action
+- Mention only runtime-bot operations by default.
+- Mention non-runtime skills only if the user asks explicitly.
+- Welcome template (use exactly 3 lines):
+- `Gestisco health e ROI dei bot MaxExtract (paper/live) con comandi SSH-first.`
+- `Esempio: "fammi report bot live ema-until-expiry btc-5m".`
+- `Vuoi partire da un bot specifico o da una vista generale?`
+
 **Execution Loop**
 
 1. Classify intent:
@@ -38,6 +53,8 @@ Operate MaxExtract runtime bots (`paper` + `live`) with high signal, low noise, 
 - `periodic-report`
 - `mutating-action` (restart/deploy/switch)
 2. Run the minimum script set needed to answer.
+2.5. Use SSH-first ops execution (`MAXEXTRACT_USE_SSH=1`) unless explicitly asked for local mode.
+2.6. Prefer Telegram-safe rendering (`MAXEXTRACT_OUTPUT_FORMAT=telegram`) unless machine parsing is requested.
 3. Apply source arbitration:
 - Prefer DB for historical ranking.
 - Fallback to API with explicit `api_fallback` marker.
@@ -55,15 +72,23 @@ Operate MaxExtract runtime bots (`paper` + `live`) with high signal, low noise, 
 **Canonical Commands**
 
 - Inventory:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_inventory.sh --context mycoolify --mode all --json`
 - API state:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_api_state.sh --context mycoolify --mode all --json`
 - DB ROI:
 `/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_db_roi.sh --mode all --days auto --json`
 - Digest:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_digest.sh --context mycoolify --mode all --days auto`
 - Periodic report:
-`/Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bots_periodic_report.sh --context mycoolify --mode all --days auto --interval-hours 3`
+- Bot resolve:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_resolve.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
+- Bot health:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_health.sh --mode paper --strategy ema-until-expiry --market btc-5m --json`
+- Bot ROI:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_roi.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
+- Bot report:
+`MAXEXTRACT_USE_SSH=1 /Users/gherardolattanzi/Desktop/maxextract/scripts/me_bot_report.sh --mode paper --strategy ema-until-expiry --market btc-5m --days auto --json`
 
 **Cross References**
 

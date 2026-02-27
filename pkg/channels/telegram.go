@@ -23,6 +23,8 @@ import (
 	"github.com/sipeed/picoclaw/pkg/voice"
 )
 
+const maxextractScriptsDir = "/Users/gherardolattanzi/Desktop/maxextract/scripts"
+
 type TelegramChannel struct {
 	*BaseChannel
 	bot          *telego.Bot
@@ -120,6 +122,34 @@ func (c *TelegramChannel) Start(ctx context.Context) error {
 	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
 		return c.commands.List(ctx, message)
 	}, th.CommandEqual("list"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "bots")
+	}, th.CommandEqual("bots"))
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "bots")
+	}, th.CommandEqual("vedibots"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "bot")
+	}, th.CommandEqual("bot"))
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "bot")
+	}, th.CommandEqual("vedibot"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "memclear")
+	}, th.CommandEqual("memclear"))
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "memclear")
+	}, th.CommandEqual("memoria"))
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "memclear")
+	}, th.CommandEqual("cancellamemoria"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "run")
+	}, th.CommandEqual("run"))
 
 	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
 		return c.handleMessage(ctx, &message)
@@ -374,6 +404,102 @@ func (c *TelegramChannel) handleMessage(ctx context.Context, message *telego.Mes
 
 	c.HandleMessage(fmt.Sprintf("%d", user.ID), fmt.Sprintf("%d", chatID), content, mediaPaths, metadata)
 	return nil
+}
+
+func commandArgsFromText(text string) string {
+	parts := strings.SplitN(strings.TrimSpace(text), " ", 2)
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
+}
+
+func (c *TelegramChannel) sendSlashText(ctx context.Context, message *telego.Message, text string) error {
+	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
+		ChatID: telego.ChatID{ID: message.Chat.ID},
+		Text:   text,
+		ReplyParameters: &telego.ReplyParameters{
+			MessageID: message.MessageID,
+		},
+	})
+	return err
+}
+
+func isSafeRunCommand(raw string) bool {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return false
+	}
+	if strings.ContainsAny(trimmed, "`") || strings.Contains(trimmed, "$(") {
+		return false
+	}
+	// Keep slash-command runner simple and safe.
+	disallowed := []string{"&&", "||", ";", "|", ">", "<"}
+	for _, token := range disallowed {
+		if strings.Contains(trimmed, token) {
+			return false
+		}
+	}
+	// Allow only Coolify and known MaxExtract ops scripts.
+	if strings.HasPrefix(trimmed, "coolify ") {
+		return true
+	}
+	if strings.HasPrefix(trimmed, maxextractScriptsDir+"/me_bot") ||
+		strings.HasPrefix(trimmed, maxextractScriptsDir+"/me_bots") {
+		return true
+	}
+	if strings.HasPrefix(trimmed, "me_bot") || strings.HasPrefix(trimmed, "me_bots") {
+		return true
+	}
+	return false
+}
+
+func normalizeRunCommand(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if strings.HasPrefix(trimmed, "me_bot") || strings.HasPrefix(trimmed, "me_bots") {
+		return fmt.Sprintf("%s/%s", maxextractScriptsDir, trimmed)
+	}
+	return trimmed
+}
+
+func (c *TelegramChannel) buildOpsSlashPrompt(cmd, args string) (string, error) {
+	switch cmd {
+	case "bots":
+		return fmt.Sprintf("Esegui e riassumi in formato Telegram questo comando: MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bots_api_state.sh --context mycoolify --mode all", maxextractScriptsDir), nil
+	case "bot":
+		if args == "" {
+			return "", fmt.Errorf("Uso: /bot <mode> <strategy> <market>\nEsempio: /bot paper ema-until-expiry btc-5m")
+		}
+		fields := strings.Fields(args)
+		if len(fields) < 3 {
+			return "", fmt.Errorf("Parametri insufficienti.\nUso: /bot <mode> <strategy> <market>\nEsempio: /bot live conviction btc-5m")
+		}
+		mode, strategy, market := fields[0], fields[1], fields[2]
+		return fmt.Sprintf("Esegui e riassumi in formato Telegram questo comando: MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bot_report.sh --context mycoolify --mode %s --strategy %s --market %s --days auto", maxextractScriptsDir, mode, strategy, market), nil
+	case "memclear":
+		return "Pulisci la memoria operativa del workspace corrente: svuota memory/MEMORY.md, aggiungi nota nel daily note di oggi con timestamp e motivo 'manual reset da /memclear', poi conferma in 3 bullet cosa hai cancellato.", nil
+	case "run":
+		if args == "" {
+			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots...")
+		}
+		if !isSafeRunCommand(args) {
+			return "", fmt.Errorf("Comando bloccato (unsafe).\nPrefissi consentiti: coolify, me_bot, me_bots")
+		}
+		normalized := normalizeRunCommand(args)
+		return fmt.Sprintf("Esegui questo comando shell e restituisci output compatto in formato Telegram:\n%s", normalized), nil
+	default:
+		return "", fmt.Errorf("Unsupported command: %s", cmd)
+	}
+}
+
+func (c *TelegramChannel) handleOpsSlashCommand(ctx context.Context, message *telego.Message, cmd string) error {
+	args := commandArgsFromText(message.Text)
+	prompt, err := c.buildOpsSlashPrompt(cmd, args)
+	if err != nil {
+		return c.sendSlashText(ctx, message, err.Error())
+	}
+	message.Text = prompt
+	return c.handleMessage(ctx, message)
 }
 
 func (c *TelegramChannel) downloadPhoto(ctx context.Context, fileID string) string {
