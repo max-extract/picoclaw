@@ -466,7 +466,21 @@ func normalizeRunCommand(raw string) string {
 func (c *TelegramChannel) buildOpsShellCommand(cmd, args string) (string, error) {
 	switch cmd {
 	case "bots":
-		return fmt.Sprintf("MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bots_api_state.sh --context mycoolify --mode all", maxextractScriptsDir), nil
+		return `if [ -z "${COOLIFY_API_URL:-}" ] || [ -z "${COOLIFY_API_TOKEN:-}" ]; then
+  echo "Missing COOLIFY_API_URL / COOLIFY_API_TOKEN in environment."
+  exit 1
+fi
+curl -fsS -H "Authorization: Bearer ${COOLIFY_API_TOKEN}" "${COOLIFY_API_URL}/api/v1/applications" \
+| jq -r '
+  [.[] | select((.name|ascii_downcase|test("ema until expiry|conviction|latency|arb|monitor|recorder")))] as $apps
+  | if ($apps|length)==0 then
+      "No MaxExtract bot services found."
+    else
+      (["MaxExtract services (" + (($apps|length)|tostring) + "):"] +
+       ($apps | map("• " + .name + " — " + .status)))
+      | .[]
+    end
+'`, nil
 	case "bot":
 		if args == "" {
 			return "", fmt.Errorf("Uso: /bot <mode> <strategy> <market>\nEsempio: /bot paper ema-until-expiry btc-5m")
@@ -476,7 +490,23 @@ func (c *TelegramChannel) buildOpsShellCommand(cmd, args string) (string, error)
 			return "", fmt.Errorf("Parametri insufficienti.\nUso: /bot <mode> <strategy> <market>\nEsempio: /bot live conviction btc-5m")
 		}
 		mode, strategy, market := fields[0], fields[1], fields[2]
-		return fmt.Sprintf("MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bot_report.sh --context mycoolify --mode %s --strategy %s --market %s --days auto", maxextractScriptsDir, mode, strategy, market), nil
+		strategyQ := strings.ReplaceAll(strings.ToLower(strategy), "-", " ")
+		marketQ := strings.ReplaceAll(strings.ToLower(market), "-", " ")
+		return fmt.Sprintf(`if [ -z "${COOLIFY_API_URL:-}" ] || [ -z "${COOLIFY_API_TOKEN:-}" ]; then
+  echo "Missing COOLIFY_API_URL / COOLIFY_API_TOKEN in environment."
+  exit 1
+fi
+curl -fsS -H "Authorization: Bearer ${COOLIFY_API_TOKEN}" "${COOLIFY_API_URL}/api/v1/applications" \
+| jq -r --arg mode "%s" --arg strategy "%s" --arg market "%s" '
+  [.[] | select((.name|ascii_downcase|contains($strategy)) and (.name|ascii_downcase|contains($market)))] as $m
+  | if ($m|length)==0 then
+      "Nessun bot trovato per mode=\($mode), strategy=\($strategy), market=\($market)."
+    else
+      (["Bot report (\($mode) / \($strategy) / \($market)):"] +
+       ($m | map("• " + .name + " — " + .status + " — uuid: " + .uuid)))
+      | .[]
+    end
+'`, mode, strategyQ, marketQ), nil
 	case "run":
 		if args == "" {
 			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots...")
