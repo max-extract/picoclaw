@@ -48,17 +48,18 @@ Core
 
 Fleet
 - /bots [all|paper|live]
+- /vedibots (alias of /bots)
 - /inventory [all|paper|live]
 - /digest [all|paper|live] [days]
 - /pnl [all|paper|live]
 - /truth_slo [all|paper|live]
-- /vedibots
+- /truthslo (alias of /truth_slo)
 
 Bot Detail
 - /bot <mode> <strategy> <market> [days]
+- /vedibot <mode> <strategy> <market> (alias of /bot)
 - /health <mode> <strategy> <market>
 - /roi <mode> <strategy> <market> [days]
-- /vedibot <mode> <strategy> <market>
 
 Memory
 - /memclear
@@ -71,7 +72,9 @@ Runner
 
 Examples
 - /bots live
+- /inventory live
 - /digest all 7
+- /health live latency-lite btc-5m
 - /bot paper ema-until-expiry btc-5m`
 	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
@@ -86,7 +89,7 @@ Examples
 func (c *cmd) Start(ctx context.Context, message telego.Message) error {
 	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
-		Text:   "MaxExtract Ops Copilot\nFleet: /bots live or /digest all 7\nBot: /bot paper ema-until-expiry btc-5m",
+		Text:   "MaxExtract Ops Copilot\nFleet: /inventory live or /digest all 7\nBot: /health live latency-lite btc-5m",
 		ReplyParameters: &telego.ReplyParameters{
 			MessageID: message.MessageID,
 		},
