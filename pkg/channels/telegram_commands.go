@@ -38,7 +38,7 @@ func commandArgs(text string) string {
 }
 
 func (c *cmd) Help(ctx context.Context, message telego.Message) error {
-	msg := `PicoClaw Ops Menu
+	msg := `MaxExtract Ops Menu
 
 Core
 - /start
@@ -46,10 +46,18 @@ Core
 - /show model|channel
 - /list models|channels
 
-Bot Ops
-- /bots
-- /bot <mode> <strategy> <market>
+Fleet
+- /bots [all|paper|live]
+- /inventory [all|paper|live]
+- /digest [all|paper|live] [days]
+- /pnl [all|paper|live]
+- /truth_slo [all|paper|live]
 - /vedibots
+
+Bot Detail
+- /bot <mode> <strategy> <market> [days]
+- /health <mode> <strategy> <market>
+- /roi <mode> <strategy> <market> [days]
 - /vedibot <mode> <strategy> <market>
 
 Memory
@@ -59,9 +67,11 @@ Memory
 
 Runner
 - /run <command>
-  Allowed: coolify ..., me_bot..., me_bots...
+  Allowed: coolify ..., me_bot..., me_bots..., workspace/bin/me.sh ...
 
-Example
+Examples
+- /bots live
+- /digest all 7
 - /bot paper ema-until-expiry btc-5m`
 	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
@@ -76,7 +86,7 @@ Example
 func (c *cmd) Start(ctx context.Context, message telego.Message) error {
 	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
-		Text:   "MaxExtract Ops Copilot\nHealth + ROI bot-specific, output Telegram-clean\nTry: /bot paper ema-until-expiry btc-5m",
+		Text:   "MaxExtract Ops Copilot\nFleet: /bots live or /digest all 7\nBot: /bot paper ema-until-expiry btc-5m",
 		ReplyParameters: &telego.ReplyParameters{
 			MessageID: message.MessageID,
 		},

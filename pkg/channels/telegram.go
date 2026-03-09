@@ -2,12 +2,14 @@ package channels
 
 import (
 	"context"
-	"os/exec"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -24,7 +26,7 @@ import (
 	"github.com/sipeed/picoclaw/pkg/voice"
 )
 
-const maxextractScriptsDir = "/Users/gherardolattanzi/Desktop/maxextract/scripts"
+const defaultCoolifyContext = "mycoolify"
 
 type TelegramChannel struct {
 	*BaseChannel
@@ -44,6 +46,189 @@ type thinkingCancel struct {
 func (c *thinkingCancel) Cancel() {
 	if c != nil && c.fn != nil {
 		c.fn()
+	}
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
+}
+
+func collectParentDirs(start string, maxDepth int) []string {
+	if start == "" || maxDepth <= 0 {
+		return nil
+	}
+
+	dirs := make([]string, 0, maxDepth)
+	current := filepath.Clean(start)
+	for i := 0; i < maxDepth; i++ {
+		dirs = append(dirs, current)
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return dirs
+}
+
+func uniqueNonEmpty(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		out = append(out, trimmed)
+	}
+	return out
+}
+
+func resolvePicoclawRoot() (string, error) {
+	candidates := make([]string, 0, 12)
+	if envRoot := strings.TrimSpace(os.Getenv("PICOCLAW_ROOT")); envRoot != "" {
+		candidates = append(candidates, envRoot)
+	}
+
+	if cwd, err := os.Getwd(); err == nil {
+		candidates = append(candidates, collectParentDirs(cwd, 6)...)
+	}
+
+	if _, sourceFile, _, ok := runtime.Caller(0); ok {
+		sourceRoot := filepath.Clean(filepath.Join(filepath.Dir(sourceFile), "..", ".."))
+		candidates = append(candidates, collectParentDirs(sourceRoot, 3)...)
+	}
+
+	for _, candidate := range uniqueNonEmpty(candidates) {
+		if fileExists(filepath.Join(candidate, "workspace", "bin", "me.sh")) {
+			return candidate, nil
+		}
+	}
+
+	return "", fmt.Errorf("unable to locate picoclaw workspace root; set PICOCLAW_ROOT")
+}
+
+func resolveWorkspaceRunner() (string, error) {
+	root, err := resolvePicoclawRoot()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(root, "workspace", "bin", "me.sh"), nil
+}
+
+func shellQuote(value string) string {
+	if value == "" {
+		return "''"
+	}
+	return "'" + strings.ReplaceAll(value, "'", `'"'"'`) + "'"
+}
+
+func buildMaxExtractScriptCommand(script string, args ...string) (string, error) {
+	wrapper, err := resolveWorkspaceRunner()
+	if err != nil {
+		return "", err
+	}
+
+	parts := []string{
+		"MAXEXTRACT_USE_SSH=1",
+		"MAXEXTRACT_OUTPUT_FORMAT=telegram",
+		shellQuote(wrapper),
+		shellQuote(script),
+	}
+	for _, arg := range args {
+		parts = append(parts, shellQuote(arg))
+	}
+	return strings.Join(parts, " "), nil
+}
+
+func isValidMode(value string, allowAll bool) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "paper", "live":
+		return true
+	case "all":
+		return allowAll
+	default:
+		return false
+	}
+}
+
+func parseFleetModeArgs(cmdName, args string) (string, error) {
+	fields := strings.Fields(args)
+	if len(fields) == 0 {
+		return "all", nil
+	}
+	if len(fields) > 1 {
+		return "", fmt.Errorf("Uso: /%s [all|paper|live]", cmdName)
+	}
+	mode := strings.ToLower(fields[0])
+	if !isValidMode(mode, true) {
+		return "", fmt.Errorf("Mode non valido: %s. Usa all, paper o live.", fields[0])
+	}
+	return mode, nil
+}
+
+func parseFleetModeAndDaysArgs(cmdName, args string) (string, string, error) {
+	fields := strings.Fields(args)
+	mode := "all"
+	days := "auto"
+
+	switch len(fields) {
+	case 0:
+		return mode, days, nil
+	case 1:
+		if isValidMode(fields[0], true) {
+			return strings.ToLower(fields[0]), days, nil
+		}
+		return mode, fields[0], nil
+	case 2:
+		if !isValidMode(fields[0], true) {
+			return "", "", fmt.Errorf("Mode non valido: %s. Usa all, paper o live.", fields[0])
+		}
+		return strings.ToLower(fields[0]), fields[1], nil
+	default:
+		return "", "", fmt.Errorf("Uso: /%s [all|paper|live] [days]", cmdName)
+	}
+}
+
+func parseBotSelectorArgs(cmdName, args string, allowDays bool) (string, string, string, string, error) {
+	fields := strings.Fields(args)
+	if len(fields) < 3 {
+		usage := fmt.Sprintf("Uso: /%s <mode> <strategy> <market>", cmdName)
+		if allowDays {
+			usage += " [days]"
+		}
+		return "", "", "", "", fmt.Errorf("%s\nEsempio: /%s paper ema-until-expiry btc-5m", usage, cmdName)
+	}
+	if len(fields) > 3 && !allowDays {
+		return "", "", "", "", fmt.Errorf("Uso: /%s <mode> <strategy> <market>", cmdName)
+	}
+	if len(fields) > 4 {
+		return "", "", "", "", fmt.Errorf("Uso: /%s <mode> <strategy> <market> [days]", cmdName)
+	}
+
+	mode := strings.ToLower(fields[0])
+	if !isValidMode(mode, false) {
+		return "", "", "", "", fmt.Errorf("Mode non valido: %s. Usa paper o live.", fields[0])
+	}
+
+	days := "auto"
+	if allowDays && len(fields) == 4 {
+		days = fields[3]
+	}
+	return mode, fields[1], fields[2], days, nil
+}
+
+func isDirectShellSlashCommand(cmd string) bool {
+	switch cmd {
+	case "bots", "inventory", "digest", "pnl", "truth_slo", "bot", "health", "roi", "run":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -132,11 +317,38 @@ func (c *TelegramChannel) Start(ctx context.Context) error {
 	}, th.CommandEqual("vedibots"))
 
 	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "inventory")
+	}, th.CommandEqual("inventory"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "digest")
+	}, th.CommandEqual("digest"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "pnl")
+	}, th.CommandEqual("pnl"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "truth_slo")
+	}, th.CommandEqual("truth_slo"))
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "truth_slo")
+	}, th.CommandEqual("truthslo"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
 		return c.handleOpsSlashCommand(ctx, &message, "bot")
 	}, th.CommandEqual("bot"))
 	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
 		return c.handleOpsSlashCommand(ctx, &message, "bot")
 	}, th.CommandEqual("vedibot"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "health")
+	}, th.CommandEqual("health"))
+
+	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
+		return c.handleOpsSlashCommand(ctx, &message, "roi")
+	}, th.CommandEqual("roi"))
 
 	bh.HandleMessage(func(ctx *th.Context, message telego.Message) error {
 		return c.handleOpsSlashCommand(ctx, &message, "memclear")
@@ -416,13 +628,21 @@ func commandArgsFromText(text string) string {
 }
 
 func (c *TelegramChannel) sendSlashText(ctx context.Context, message *telego.Message, text string) error {
-	_, err := c.bot.SendMessage(ctx, &telego.SendMessageParams{
+	params := &telego.SendMessageParams{
 		ChatID: telego.ChatID{ID: message.Chat.ID},
-		Text:   text,
+		Text:   markdownToTelegramHTML(text),
+		ParseMode: telego.ModeHTML,
 		ReplyParameters: &telego.ReplyParameters{
 			MessageID: message.MessageID,
 		},
-	})
+	}
+	if _, err := c.bot.SendMessage(ctx, params); err == nil {
+		return nil
+	}
+
+	params.Text = text
+	params.ParseMode = ""
+	_, err := c.bot.SendMessage(ctx, params)
 	return err
 }
 
@@ -445,76 +665,123 @@ func isSafeRunCommand(raw string) bool {
 	if strings.HasPrefix(trimmed, "coolify ") {
 		return true
 	}
-	if strings.HasPrefix(trimmed, maxextractScriptsDir+"/me_bot") ||
-		strings.HasPrefix(trimmed, maxextractScriptsDir+"/me_bots") {
+	if strings.HasPrefix(trimmed, "me_bot") || strings.HasPrefix(trimmed, "me_bots") {
 		return true
 	}
-	if strings.HasPrefix(trimmed, "me_bot") || strings.HasPrefix(trimmed, "me_bots") {
+	if strings.HasPrefix(trimmed, "./workspace/bin/me.sh ") ||
+		strings.HasPrefix(trimmed, "workspace/bin/me.sh ") ||
+		strings.Contains(trimmed, "/workspace/bin/me.sh ") {
+		return true
+	}
+	if strings.Contains(trimmed, "/scripts/me_bot") || strings.Contains(trimmed, "/scripts/me_bots") {
 		return true
 	}
 	return false
 }
 
-func normalizeRunCommand(raw string) string {
+func normalizeRunCommand(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if strings.HasPrefix(trimmed, "me_bot") || strings.HasPrefix(trimmed, "me_bots") {
-		return fmt.Sprintf("%s/%s", maxextractScriptsDir, trimmed)
+		wrapper, err := resolveWorkspaceRunner()
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s %s", shellQuote(wrapper), trimmed), nil
 	}
-	return trimmed
+	if strings.HasPrefix(trimmed, "./workspace/bin/me.sh ") ||
+		strings.HasPrefix(trimmed, "workspace/bin/me.sh ") ||
+		strings.Contains(trimmed, "/workspace/bin/me.sh ") {
+		wrapper, err := resolveWorkspaceRunner()
+		if err != nil {
+			return "", err
+		}
+		re := regexp.MustCompile(`^(\./)?workspace/bin/me\.sh\s+`)
+		normalized := re.ReplaceAllString(trimmed, fmt.Sprintf("%s ", shellQuote(wrapper)))
+		if normalized != trimmed {
+			return normalized, nil
+		}
+	}
+	return trimmed, nil
 }
 
 func (c *TelegramChannel) buildOpsShellCommand(cmd, args string) (string, error) {
 	switch cmd {
 	case "bots":
-		return `if [ -z "${COOLIFY_API_URL:-}" ] || [ -z "${COOLIFY_API_TOKEN:-}" ]; then
-  echo "Missing COOLIFY_API_URL / COOLIFY_API_TOKEN in environment."
-  exit 1
-fi
-curl -fsS -H "Authorization: Bearer ${COOLIFY_API_TOKEN}" "${COOLIFY_API_URL}/api/v1/applications" \
-| jq -r '
-  [.[] | select((.name|ascii_downcase|test("ema until expiry|conviction|latency|arb|monitor|recorder")))] as $apps
-  | if ($apps|length)==0 then
-      "No MaxExtract bot services found."
-    else
-      (["MaxExtract services (" + (($apps|length)|tostring) + "):"] +
-       ($apps | map("• " + .name + " — " + .status)))
-      | .[]
-    end
-'`, nil
+		mode, err := parseFleetModeArgs("bots", args)
+		if err != nil {
+			return "", err
+		}
+		return buildMaxExtractScriptCommand("me_bots_api_state.sh", "--context", defaultCoolifyContext, "--mode", mode)
+	case "inventory":
+		mode, err := parseFleetModeArgs("inventory", args)
+		if err != nil {
+			return "", err
+		}
+		return buildMaxExtractScriptCommand("me_bots_inventory.sh", "--context", defaultCoolifyContext, "--mode", mode)
+	case "digest":
+		mode, days, err := parseFleetModeAndDaysArgs("digest", args)
+		if err != nil {
+			return "", err
+		}
+		return buildMaxExtractScriptCommand("me_bots_digest.sh", "--context", defaultCoolifyContext, "--mode", mode, "--days", days)
+	case "pnl":
+		mode, err := parseFleetModeArgs("pnl", args)
+		if err != nil {
+			return "", err
+		}
+		return buildMaxExtractScriptCommand("me_bots_pnl.sh", "--context", defaultCoolifyContext, "--mode", mode)
+	case "truth_slo":
+		mode, err := parseFleetModeArgs("truth_slo", args)
+		if err != nil {
+			return "", err
+		}
+		return buildMaxExtractScriptCommand("me_bots_truth_slo.sh", "--context", defaultCoolifyContext, "--mode", mode)
 	case "bot":
-		if args == "" {
-			return "", fmt.Errorf("Uso: /bot <mode> <strategy> <market>\nEsempio: /bot paper ema-until-expiry btc-5m")
+		mode, strategy, market, days, err := parseBotSelectorArgs("bot", args, true)
+		if err != nil {
+			return "", err
 		}
-		fields := strings.Fields(args)
-		if len(fields) < 3 {
-			return "", fmt.Errorf("Parametri insufficienti.\nUso: /bot <mode> <strategy> <market>\nEsempio: /bot live conviction btc-5m")
+		return buildMaxExtractScriptCommand(
+			"me_bot_report.sh",
+			"--context", defaultCoolifyContext,
+			"--mode", mode,
+			"--strategy", strategy,
+			"--market", market,
+			"--days", days,
+		)
+	case "health":
+		mode, strategy, market, _, err := parseBotSelectorArgs("health", args, false)
+		if err != nil {
+			return "", err
 		}
-		mode, strategy, market := fields[0], fields[1], fields[2]
-		strategyQ := strings.ReplaceAll(strings.ToLower(strategy), "-", " ")
-		marketQ := strings.ReplaceAll(strings.ToLower(market), "-", " ")
-		return fmt.Sprintf(`if [ -z "${COOLIFY_API_URL:-}" ] || [ -z "${COOLIFY_API_TOKEN:-}" ]; then
-  echo "Missing COOLIFY_API_URL / COOLIFY_API_TOKEN in environment."
-  exit 1
-fi
-curl -fsS -H "Authorization: Bearer ${COOLIFY_API_TOKEN}" "${COOLIFY_API_URL}/api/v1/applications" \
-| jq -r --arg mode "%s" --arg strategy "%s" --arg market "%s" '
-  [.[] | select((.name|ascii_downcase|contains($strategy)) and (.name|ascii_downcase|contains($market)))] as $m
-  | if ($m|length)==0 then
-      "Nessun bot trovato per mode=\($mode), strategy=\($strategy), market=\($market)."
-    else
-      (["Bot report (\($mode) / \($strategy) / \($market)):"] +
-       ($m | map("• " + .name + " — " + .status + " — uuid: " + .uuid)))
-      | .[]
-    end
-'`, mode, strategyQ, marketQ), nil
+		return buildMaxExtractScriptCommand(
+			"me_bot_health.sh",
+			"--context", defaultCoolifyContext,
+			"--mode", mode,
+			"--strategy", strategy,
+			"--market", market,
+		)
+	case "roi":
+		mode, strategy, market, days, err := parseBotSelectorArgs("roi", args, true)
+		if err != nil {
+			return "", err
+		}
+		return buildMaxExtractScriptCommand(
+			"me_bot_roi.sh",
+			"--context", defaultCoolifyContext,
+			"--mode", mode,
+			"--strategy", strategy,
+			"--market", market,
+			"--days", days,
+		)
 	case "run":
 		if args == "" {
-			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots...")
+			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots..., workspace/bin/me.sh ...")
 		}
 		if !isSafeRunCommand(args) {
-			return "", fmt.Errorf("Comando bloccato (unsafe).\nPrefissi consentiti: coolify, me_bot, me_bots")
+			return "", fmt.Errorf("Comando bloccato (unsafe).\nPrefissi consentiti: coolify, me_bot, me_bots, workspace/bin/me.sh")
 		}
-		return normalizeRunCommand(args), nil
+		return normalizeRunCommand(args)
 	default:
 		return "", fmt.Errorf("Unsupported command: %s", cmd)
 	}
@@ -528,7 +795,7 @@ func truncateForTelegram(text string, maxLen int) string {
 }
 
 func (c *TelegramChannel) runOpsShellCommand(ctx context.Context, cmdText string) string {
-	runCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	runCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(runCtx, "/bin/sh", "-lc", cmdText)
@@ -536,7 +803,7 @@ func (c *TelegramChannel) runOpsShellCommand(ctx context.Context, cmdText string
 	result := strings.TrimSpace(string(out))
 
 	if runCtx.Err() == context.DeadlineExceeded {
-		return "Comando timeout (90s). Riprova con un comando piu corto."
+		return "Comando timeout (120s). Riprova con scope piu piccolo."
 	}
 
 	if err != nil {
@@ -554,28 +821,19 @@ func (c *TelegramChannel) runOpsShellCommand(ctx context.Context, cmdText string
 
 func (c *TelegramChannel) buildOpsSlashPrompt(cmd, args string) (string, error) {
 	switch cmd {
-	case "bots":
-		return fmt.Sprintf("Esegui e riassumi in formato Telegram questo comando: MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bots_api_state.sh --context mycoolify --mode all", maxextractScriptsDir), nil
-	case "bot":
-		if args == "" {
-			return "", fmt.Errorf("Uso: /bot <mode> <strategy> <market>\nEsempio: /bot paper ema-until-expiry btc-5m")
-		}
-		fields := strings.Fields(args)
-		if len(fields) < 3 {
-			return "", fmt.Errorf("Parametri insufficienti.\nUso: /bot <mode> <strategy> <market>\nEsempio: /bot live conviction btc-5m")
-		}
-		mode, strategy, market := fields[0], fields[1], fields[2]
-		return fmt.Sprintf("Esegui e riassumi in formato Telegram questo comando: MAXEXTRACT_USE_SSH=1 MAXEXTRACT_OUTPUT_FORMAT=telegram %s/me_bot_report.sh --context mycoolify --mode %s --strategy %s --market %s --days auto", maxextractScriptsDir, mode, strategy, market), nil
 	case "memclear":
 		return "Pulisci la memoria operativa del workspace corrente: svuota memory/MEMORY.md, aggiungi nota nel daily note di oggi con timestamp e motivo 'manual reset da /memclear', poi conferma in 3 bullet cosa hai cancellato.", nil
 	case "run":
 		if args == "" {
-			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots...")
+			return "", fmt.Errorf("Uso: /run <command>\nConsentiti: coolify ..., me_bot..., me_bots..., workspace/bin/me.sh ...")
 		}
 		if !isSafeRunCommand(args) {
-			return "", fmt.Errorf("Comando bloccato (unsafe).\nPrefissi consentiti: coolify, me_bot, me_bots")
+			return "", fmt.Errorf("Comando bloccato (unsafe).\nPrefissi consentiti: coolify, me_bot, me_bots, workspace/bin/me.sh")
 		}
-		normalized := normalizeRunCommand(args)
+		normalized, err := normalizeRunCommand(args)
+		if err != nil {
+			return "", err
+		}
 		return fmt.Sprintf("Esegui questo comando shell e restituisci output compatto in formato Telegram:\n%s", normalized), nil
 	default:
 		return "", fmt.Errorf("Unsupported command: %s", cmd)
@@ -585,7 +843,7 @@ func (c *TelegramChannel) buildOpsSlashPrompt(cmd, args string) (string, error) 
 func (c *TelegramChannel) handleOpsSlashCommand(ctx context.Context, message *telego.Message, cmd string) error {
 	args := commandArgsFromText(message.Text)
 
-	if cmd == "bot" || cmd == "bots" || cmd == "run" {
+	if isDirectShellSlashCommand(cmd) {
 		shellCmd, err := c.buildOpsShellCommand(cmd, args)
 		if err != nil {
 			return c.sendSlashText(ctx, message, err.Error())
